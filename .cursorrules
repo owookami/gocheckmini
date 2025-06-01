@@ -1,0 +1,31 @@
+
+{
+  "rules": [
+    "Do not modify any code outside the specified files.",
+    "Avoid refactoring unless explicitly requested.",
+    "Preserve all existing comments and formatting.",
+    "버그에 대한 테스트 케이스를 작성하고, 테스트를 통과하도록 코드를 수정하세요." ,
+    "버그를 주석 처리하지 말고 실제로 수정하세요.",
+    "기존 코드를 삭제하거나 주석 처리하지 마세요.",
+    "모든 변경 사항은 테스트 케이스를 통해 검증하세요.",
+    "기존 주석을 제거하지 마세요.",
+    "Write a test case for this feature first",
+    "Now implement the function to pass this test",
+    “모르는 부분은 코멘트로 남겨줘. 추정해서 만들지 마.”,
+    "Do not generate fantasy or placeholder code for Flutter, Riverpod, GoRouter, or FastAPI.",
+    "Only use verified Dart and Python syntax and standard libraries.",
+    "If a widget, provider, route, or API endpoint does not exist in the project, do not create it unless explicitly instructed.",
+    "Do not invent methods, class names, or modules that aren't part of the current architecture.",
+    "Never assume the existence of APIs; ask for their definition if unclear.",
+    "Always include necessary import statements when generating code.",
+    "Avoid boilerplate without purpose — keep code minimal and context-aware.",
+    "Mark any uncertainties with TODO comments rather than fabricating logic.",
+    "Adhere strictly to the folder structure of the project. Do not generate new folders arbitrarily.",
+    "For Riverpod, use ref.watch(), ref.read(), or ref.listen() correctly with type safety.",
+    "For GoRouter, use defined route names or paths. Do not create imaginary routes.",
+    "For FastAPI, use correct route decorators, and avoid using pseudo-logic for database or auth unless models are defined.",
+    "If a feature requires a backend call, check if the endpoint exists before calling it.",
+    "Do not write test code or mocks unless asked.",
+    "Avoid 'magic' helpers or utils that haven't been explicitly requested or previously defined."
+  ]
+}
