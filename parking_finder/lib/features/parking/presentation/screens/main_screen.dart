@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/models/standard_region_model.dart';
 import '../../data/models/parking_model.dart';
@@ -377,6 +378,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
             // 검색 버튼
             _buildSearchButton(),
+
+            const SizedBox(height: 16),
+
+            // 구조 분석 버튼
+            _buildStructureAnalysisButton(),
           ],
         ),
       ),
@@ -665,6 +671,38 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     ),
                   ],
                 ),
+      ),
+    );
+  }
+
+  /// 구조 분석 버튼
+  Widget _buildStructureAnalysisButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: () {
+          context.push('/structure-analysis');
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange[600],
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.analytics, size: 24),
+            SizedBox(width: 12),
+            Text(
+              '건축물 구조 분석',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
   }
