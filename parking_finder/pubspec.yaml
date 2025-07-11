@@ -82,7 +82,7 @@ dev_dependencies:
 
   # Code Generation
   build_runner: 2.4.6
-  riverpod_generator: ^2.6.2
+  riverpod_generator: ^2.4.0
   freezed: ^2.5.2
   json_serializable: ^6.6.0
   sqflite_common_ffi: ^2.3.0+4
