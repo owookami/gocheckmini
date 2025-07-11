@@ -109,6 +109,8 @@ class LocalRegionService {
     
     // 시도코드를 2자리로 변환 (11000 -> 11)
     final sidoPrefix = sidoCode.length >= 2 ? sidoCode.substring(0, 2) : sidoCode;
+    _logger.i('🔍 사용할 sidoPrefix: $sidoPrefix');
+    if (kIsWeb) print('🔍 [WEB] 사용할 sidoPrefix: $sidoPrefix');
     
     // 해당 시도의 시군구들 찾기
     final sigunguList = regionData

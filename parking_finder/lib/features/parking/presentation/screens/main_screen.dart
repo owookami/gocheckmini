@@ -557,8 +557,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 setState(() {
                   selectedSido = region;
                 });
-                if (region?.sidoCd != null) {
-                  _loadSigunguList(region!.sidoCd!);
+                if (region?.regionCd != null) {
+                  _loadSigunguList(region!.regionCd!);
                 }
               },
               itemLabel: (region) => region.displayName,
@@ -577,8 +577,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 setState(() {
                   selectedSigungu = region;
                 });
-                if (region?.sggCd != null && selectedSido?.sidoCd != null) {
-                  _loadUmdList(selectedSido!.sidoCd!, region!.sggCd!);
+                if (region?.sggCd != null && selectedSido?.regionCd != null) {
+                  _loadUmdList(selectedSido!.regionCd!, region!.sggCd!);
                 }
               },
               itemLabel: (region) => region.displayName,
