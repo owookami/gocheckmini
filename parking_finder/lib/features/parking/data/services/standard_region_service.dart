@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 
 import '../../../../core/config/env_config.dart';
-import '../../../../core/utils/web_utils.dart';
 import '../models/standard_region_model.dart';
 
 /// 행정안전부 표준 지역 코드 서비스
@@ -27,12 +26,7 @@ class StandardRegionService {
     // 쿼리 파라미터 인코딩 설정
     _dio.options.listFormat = ListFormat.multiCompatible;
 
-    // 웹 환경에서는 User-Agent 헤더 제거 (CORS 문제 방지)
-    if (kIsWeb) {
-      _dio.options.headers = {};
-    } else {
-      _dio.options.headers = {'User-Agent': 'ParkingFinderApp/1.0'};
-    }
+    _dio.options.headers = {'User-Agent': 'ParkingFinderApp/1.0'};
 
     // 로깅 인터셉터 추가
     _dio.interceptors.add(
@@ -58,76 +52,6 @@ class StandardRegionService {
     return key;
   }
 
-  /// 쿼리 파라미터를 URL에 포함시키는 헬퍼 메서드
-  String _buildUrlWithParams(String baseUrl, Map<String, dynamic> params) {
-    final uri = Uri.parse(baseUrl);
-    final newUri = uri.replace(queryParameters: {
-      ...uri.queryParameters,
-      ...params.map((key, value) => MapEntry(key, value.toString()))
-    });
-    return newUri.toString();
-  }
-
-  /// 웹 환경에서 API 호출을 위한 헬퍼 메서드 (프록시 실패 시 재시도)
-  Future<Response> _makeApiCall(Map<String, dynamic> queryParameters) async {
-    if (kIsWeb) {
-      // 웹 환경: 프록시를 통해 호출
-      final fullUrl = _buildUrlWithParams('$_baseUrl$_endpoint', queryParameters);
-      
-      // 최대 3번 시도 (다른 프록시 사용)
-      for (int attempt = 0; attempt < 3; attempt++) {
-        try {
-          final proxiedUrl = attempt == 0 
-              ? WebUtils.getApiUrl(fullUrl)
-              : WebUtils.getNextProxyUrl(fullUrl);
-          
-          _logger.d('🔍 프록시 시도 ${attempt + 1}: $proxiedUrl');
-          
-          final response = await _dio.get(
-            proxiedUrl,
-            options: Options(
-              headers: {}, // 웹에서는 헤더 제거
-              sendTimeout: Duration(seconds: 10),
-              receiveTimeout: Duration(seconds: 10),
-            ),
-          );
-          
-          // allorigins.win/get 사용 시 JSON 래핑 처리
-          if (proxiedUrl.contains('allorigins.win/get')) {
-            final jsonData = response.data;
-            if (jsonData is Map && jsonData.containsKey('contents')) {
-              // contents 필드에서 실제 응답 데이터 추출
-              response.data = jsonData['contents'];
-            }
-          }
-          
-          _logger.i('✅ 프록시 성공 (시도 ${attempt + 1})');
-          return response;
-          
-        } catch (e) {
-          _logger.w('⚠️ 프록시 시도 ${attempt + 1} 실패: $e');
-          if (attempt == 2) {
-            // 모든 프록시 실패 시 원본 URL로 시도 (CORS 에러 발생할 수 있음)
-            _logger.e('❌ 모든 프록시 실패, 원본 URL로 시도');
-            rethrow;
-          }
-        }
-      }
-      
-      // 여기까지 오면 안 됨
-      throw Exception('모든 프록시 서비스 사용 불가');
-      
-    } else {
-      // 모바일 환경: 일반적인 호출
-      _logger.d('🔍 요청 URL: $_baseUrl$_endpoint');
-      _logger.d('🔍 요청 파라미터: $queryParameters');
-      
-      return await _dio.get(
-        _endpoint,
-        queryParameters: queryParameters,
-      );
-    }
-  }
 
   /// 시도 목록 조회 (최상위 지역)
   Future<List<StandardRegion>> getSidoList() async {
@@ -144,13 +68,14 @@ class StandardRegionService {
         'sgg_cd': '000', // 시군구 코드가 000인 것들 (시도만)
       };
 
-      // API 호출 (웹/모바일 환경에 따라 다른 방식 사용)
-      final response = await _makeApiCall(queryParameters);
+      // API 호출
+      final response = await _dio.get(
+        _endpoint,
+        queryParameters: queryParameters,
+      );
 
       _logger.d('✅ API 응답 수신: ${response.statusCode}');
-      if (!kIsWeb) {
-        _logger.d('📊 응답 헤더: ${response.headers}');
-      }
+      _logger.d('📊 응답 헤더: ${response.headers}');
 
       if (response.statusCode == 200) {
         final responseData = response.data as String;
@@ -281,13 +206,14 @@ class StandardRegionService {
         'umd_cd': '000', // 읍면동 코드가 000인 것들 (시군구까지만)
       };
 
-      // API 호출 (웹/모바일 환경에 따라 다른 방식 사용)
-      final response = await _makeApiCall(queryParameters);
+      // API 호출
+      final response = await _dio.get(
+        _endpoint,
+        queryParameters: queryParameters,
+      );
 
       _logger.d('✅ API 응답 수신: ${response.statusCode}');
-      if (!kIsWeb) {
-        _logger.d('📊 응답 헤더: ${response.headers}');
-      }
+      _logger.d('📊 응답 헤더: ${response.headers}');
 
       if (response.statusCode == 200) {
         final responseData = response.data as String;
