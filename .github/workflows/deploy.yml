@@ -3,8 +3,7 @@ name: Deploy Flutter Web to GitHub Pages
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:  # 수동 실행 허용
 
 # GitHub Pages 배포를 위한 권한 설정
 permissions:
@@ -29,19 +28,31 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.7.2'
+        flutter-version: '3.19.0'  # 더 안정적인 최신 버전
         channel: 'stable'
+        cache: true
+        
+    - name: Verify Flutter installation
+      run: flutter --version
         
     - name: Install dependencies
+      run: flutter pub get
+      working-directory: ./parking_finder
+      
+    - name: Enable web support
+      run: flutter config --enable-web
+      
+    - name: Build web (with debugging)
       run: |
-        cd parking_finder
-        flutter pub get
-        
-    - name: Build web
-      run: |
-        cd parking_finder
-        flutter build web --base-href="/gocheckmini/"
-        
+        echo "Building Flutter web app..."
+        flutter build web --base-href="/gocheckmini/" --web-renderer canvaskit --dart-define=FLUTTER_WEB_USE_SKIA=true
+        echo "Build completed!"
+        ls -la build/web/
+      working-directory: ./parking_finder
+      
+    - name: Add .nojekyll file
+      run: touch ./parking_finder/build/web/.nojekyll
+      
     - name: Setup Pages
       uses: actions/configure-pages@v4
       
