@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/config/env_config.dart';
+import '../../../../core/utils/web_utils.dart';
 import '../models/parking_lot_model.dart';
 import '../../domain/entities/parking_lot.dart';
 
@@ -42,29 +43,72 @@ class ParkingSearchService {
     return key;
   }
 
-  /// API 호출 헬퍼 메서드 (지역 선택과 동일한 방식)
+  /// API 호출 헬퍼 메서드 (웹에서만 프록시 사용)
   Future<http.Response> _makeApiCall(String endpoint, Map<String, dynamic> queryParameters) async {
-    // 모든 환경에서 직접 API 호출 (지역 선택과 동일)
-    
-    final uri = Uri.parse('$_baseUrl$endpoint').replace(
-      queryParameters: queryParameters.map((key, value) => MapEntry(key, value.toString())),
-    );
-    
-    _logger.d('🔍 요청 URL: $uri');
-    
-    final response = await _client
-        .get(
-          uri,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json; charset=utf-8',
-            if (!kIsWeb) 'User-Agent': 'ParkingFinderApp/1.0',
-          },
-        )
-        .timeout(const Duration(seconds: 30));
-    
-    _logger.i('📨 응답 상태 코드: ${response.statusCode}');
-    return response;
+    if (kIsWeb) {
+      // 웹 환경: 주차장 검색 API는 CORS 문제로 프록시 사용
+      final fullUrl = Uri.parse('$_baseUrl$endpoint').replace(
+        queryParameters: queryParameters.map((key, value) => MapEntry(key, value.toString())),
+      ).toString();
+      
+      _logger.d('🔍 웹 환경 - 프록시 사용: $fullUrl');
+      
+      // allorigins.win 프록시 사용
+      final proxiedUrl = WebUtils.getApiUrl(fullUrl);
+      _logger.d('🔗 프록시 URL: $proxiedUrl');
+      
+      final response = await _client
+          .get(
+            Uri.parse(proxiedUrl),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json; charset=utf-8',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
+      
+      _logger.i('📨 프록시 응답 상태 코드: ${response.statusCode}');
+      
+      // allorigins.win 응답 처리
+      if (response.statusCode == 200 && proxiedUrl.contains('allorigins.win')) {
+        try {
+          final jsonData = json.decode(response.body);
+          if (jsonData is Map && jsonData.containsKey('contents')) {
+            // contents 필드에서 실제 응답 데이터 추출
+            final contentsData = jsonData['contents'];
+            if (contentsData is String) {
+              // contents가 문자열인 경우 새로운 Response 객체 생성
+              return http.Response(contentsData, response.statusCode, headers: response.headers);
+            }
+          }
+        } catch (e) {
+          _logger.w('⚠️ allorigins 응답 처리 중 오류: $e');
+        }
+      }
+      
+      return response;
+    } else {
+      // 모바일 환경: 직접 API 호출
+      final uri = Uri.parse('$_baseUrl$endpoint').replace(
+        queryParameters: queryParameters.map((key, value) => MapEntry(key, value.toString())),
+      );
+      
+      _logger.d('🔍 모바일 환경 - 직접 호출: $uri');
+      
+      final response = await _client
+          .get(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json; charset=utf-8',
+              'User-Agent': 'ParkingFinderApp/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
+      
+      _logger.i('📨 직접 호출 응답 상태 코드: ${response.statusCode}');
+      return response;
+    }
   }
 
   /// 주차장 검색 수행 (페이지네이션 지원)
