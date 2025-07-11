@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 
+import '../../../../core/config/env_config.dart';
 import '../models/standard_region_model.dart';
 
 /// 행정안전부 표준 지역 코드 서비스
@@ -40,32 +40,16 @@ class StandardRegionService {
     );
   }
 
-  /// API 키 가져오기 (안전한 접근)
+  /// API 키 가져오기
   String get _apiKey {
-    try {
-      // dotenv가 초기화되었는지 확인
-      if (!dotenv.isInitialized) {
-        _logger.w('⚠️ dotenv가 초기화되지 않음, 폴백 키 사용');
-        // 원본 키 그대로 사용 (Dio가 자동으로 인코딩)
-        return 'Ucr8SdMuzgu0G/u9nDmIjIdkh/W8gU181DC6MBXioK11bJbW8OvTrTfVWetBY+kqDeUldK9UxiPlnezZqFZn+w==';
-      }
-
-      final key = dotenv.env['STANDARD_REGION_API_KEY'];
-      if (key == null || key.isEmpty) {
-        _logger.w('⚠️ STANDARD_REGION_API_KEY가 없음, 폴백 키 사용');
-        // 원본 키 그대로 사용 (Dio가 자동으로 인코딩)
-        return 'Ucr8SdMuzgu0G/u9nDmIjIdkh/W8gU181DC6MBXioK11bJbW8OvTrTfVWetBY+kqDeUldK9UxiPlnezZqFZn+w==';
-      }
-
-      _logger.d('✅ dotenv에서 API 키 로드 성공');
-      // 원본 키 그대로 반환 (Dio가 자동으로 인코딩)
-      return key;
-    } catch (e) {
-      _logger.e('❌ API 키 접근 실패: $e');
-      _logger.w('⚠️ 폴백 API 키 사용');
-      // 원본 키 그대로 사용 (Dio가 자동으로 인코딩)
-      return 'Ucr8SdMuzgu0G/u9nDmIjIdkh/W8gU181DC6MBXioK11bJbW8OvTrTfVWetBY+kqDeUldK9UxiPlnezZqFZn+w==';
+    final key = EnvConfig.standardRegionApiKey;
+    if (key.isEmpty || key == 'your_api_key_here') {
+      _logger.w('⚠️ STANDARD_REGION_API_KEY가 설정되지 않음');
+    } else {
+      _logger.d('✅ API 키 로드 성공');
     }
+    // 원본 키 그대로 반환 (Dio가 자동으로 인코딩)
+    return key;
   }
 
   /// 시도 목록 조회 (최상위 지역)

@@ -1,18 +1,16 @@
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import '../config/env_config.dart';
 
 /// 행정안전부 법정동코드 API 서비스
 class StandardRegionApiService {
   final Logger _logger = Logger();
   final http.Client _client = http.Client();
 
-  /// .env에서 API 설정 읽기
-  String get baseUrl =>
-      dotenv.env['STANDARD_REGION_API_URL'] ??
-      'https://apis.data.go.kr/1741000/StanReginCd';
-  String get serviceKey => dotenv.env['STANDARD_REGION_API_KEY'] ?? '';
+  /// API 설정
+  String get baseUrl => 'https://apis.data.go.kr/1741000/StanReginCd';
+  String get serviceKey => EnvConfig.standardRegionApiKey;
 
   /// 법정동코드 전체 조회
   Future<List<Map<String, dynamic>>> getAllLegalDistrictCodes({
@@ -23,7 +21,7 @@ class StandardRegionApiService {
       _logger.i('🌐 법정동코드 API 호출 시작 (페이지: $pageNo, 개수: $numOfRows)');
 
       if (serviceKey.isEmpty) {
-        throw Exception('API 인증키가 설정되지 않았습니다. .env 파일을 확인하세요.');
+        throw Exception('API 인증키가 설정되지 않았습니다.');
       }
 
       final uri = Uri.parse(baseUrl).replace(

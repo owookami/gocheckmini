@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../../../core/config/env_config.dart';
 import '../models/parking_lot_model.dart';
 import '../../domain/entities/parking_lot.dart';
 
@@ -56,25 +56,14 @@ class ParkingSearchService {
 
   /// API 키 가져오기
   String get _apiKey {
-    try {
-      if (!dotenv.isInitialized) {
-        _logger.w('⚠️ dotenv가 초기화되지 않음, 폴백 키 사용');
-        return 'Ucr8SdMuzgu0G/u9nDmIjIdkh/W8gU181DC6MBXioK11bJbW8OvTrTfVWetBY+kqDeUldK9UxiPlnezZqFZn+w==';
-      }
-
-      final key = dotenv.env['PARKING_API_KEY'];
-      if (key == null || key.isEmpty) {
-        _logger.w('⚠️ PARKING_API_KEY가 없음, 폴백 키 사용');
-        return 'Ucr8SdMuzgu0G/u9nDmIjIdkh/W8gU181DC6MBXioK11bJbW8OvTrTfVWetBY+kqDeUldK9UxiPlnezZqFZn+w==';
-      }
-
-      _logger.d('✅ dotenv에서 API 키 로드 성공');
-      return key;
-    } catch (e) {
-      _logger.e('❌ API 키 접근 실패: $e');
-      _logger.w('⚠️ 폴백 API 키 사용');
+    // 건축HUB API는 같은 공공데이터 포털 API 키 사용
+    final key = EnvConfig.architectureHubApiKey;
+    if (key.isEmpty || key == 'your_api_key_here') {
+      _logger.w('⚠️ ARCHITECTURE_HUB_API_KEY가 설정되지 않음, 기본 키 사용');
       return 'Ucr8SdMuzgu0G/u9nDmIjIdkh/W8gU181DC6MBXioK11bJbW8OvTrTfVWetBY+kqDeUldK9UxiPlnezZqFZn+w==';
     }
+    _logger.d('✅ API 키 로드 성공');
+    return key;
   }
 
   /// 주차장 검색 수행 (페이지네이션 지원)

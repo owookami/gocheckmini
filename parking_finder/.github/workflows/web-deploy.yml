@@ -1,0 +1,47 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.32.6'
+        channel: 'stable'
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build Flutter web
+      run: |
+        echo "Building Flutter web app..."
+        flutter build web \
+          --base-href="/gocheckmini/" \
+          --dart-define=PUBLIC_DATA_API_KEY=${{ secrets.PUBLIC_DATA_API_KEY }} \
+          --dart-define=ARCHITECTURE_HUB_API_KEY=${{ secrets.ARCHITECTURE_HUB_API_KEY }} \
+          --dart-define=STANDARD_REGION_API_KEY=${{ secrets.STANDARD_REGION_API_KEY }} \
+          --dart-define=NAVER_MAP_CLIENT_ID=${{ secrets.NAVER_MAP_CLIENT_ID }} \
+          --dart-define=FLUTTER_WEB_USE_SKIA=true
+        echo "Build completed!"
+        ls -la build/web/
+    
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./build/web
+        publish_branch: gh-pages
+        force_orphan: true

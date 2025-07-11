@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
 import 'core/config/app_config.dart';
+import 'core/config/env_config.dart';
 import 'features/splash/splash_screen.dart';
 
 void main() async {
@@ -23,43 +23,9 @@ void main() async {
     }
   }
 
-  // .env 파일 로드 (에러 처리 추가)
-  try {
-    await dotenv.load(fileName: '.env');
-    print('✅ .env 파일 로드 성공');
-
-    // dotenv 상태 확인
-    print('🔍 dotenv.isInitialized: ${dotenv.isInitialized}');
-    print('🔍 dotenv.env.length: ${dotenv.env.length}');
-
-    // API 키 확인
-    final architectureKey = dotenv.env['ARCHITECTURE_HUB_API_KEY'];
-    final apiKey = dotenv.env['API_KEY'];
-    final standardKey = dotenv.env['STANDARD_REGION_API_KEY'];
-    final naverMapClientId = dotenv.env['NAVER_MAP_CLIENT_ID'];
-
-    print(
-      '🔑 ARCHITECTURE_HUB_API_KEY: ${architectureKey != null ? "존재함 (${architectureKey.length}자)" : "없음"}',
-    );
-    print('🔑 API_KEY: ${apiKey != null ? "존재함 (${apiKey.length}자)" : "없음"}');
-    print(
-      '🔑 STANDARD_REGION_API_KEY: ${standardKey != null ? "존재함 (${standardKey.length}자)" : "없음"}',
-    );
-    print(
-      '🗺️ NAVER_MAP_CLIENT_ID: ${naverMapClientId != null ? "존재함 (${naverMapClientId.length}자)" : "없음"}',
-    );
-
-    // 실제 값도 로그에 출력 (디버깅용)
-    if (standardKey != null) {
-      print('🔍 STANDARD_REGION_API_KEY 값: $standardKey');
-    }
-    if (naverMapClientId != null) {
-      print('🔍 NAVER_MAP_CLIENT_ID 값: $naverMapClientId');
-    }
-  } catch (e) {
-    print('⚠️ .env 파일 로드 실패: $e');
-    print('🔍 dotenv.isInitialized: ${dotenv.isInitialized}');
-    // .env 파일이 없어도 앱은 실행되도록 함
+  // 환경 설정 로그 (디버그 모드에서만)
+  if (kDebugMode) {
+    EnvConfig.printConfig();
   }
 
   runApp(const ProviderScope(child: ParkingFinderApp()));

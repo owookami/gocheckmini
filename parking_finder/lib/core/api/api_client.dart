@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:logger/logger.dart';
+import '../config/env_config.dart';
 import 'models.dart';
 
 /// API 에러 타입
@@ -52,7 +52,7 @@ class ApiClient {
 
   /// API 클라이언트 초기화
   void initialize() {
-    final baseUrl = dotenv.env['API_BASE_URL'] ?? 'https://api.data.go.kr';
+    const baseUrl = _baseUrl;
 
     _dio = Dio(
       BaseOptions(
@@ -79,9 +79,9 @@ class ApiClient {
 
   /// API 키 가져오기
   String _getApiKey() {
-    final apiKey = dotenv.env['ARCHITECTURE_HUB_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      _logger.e('API 키가 설정되지 않았습니다. .env 파일을 확인하세요.');
+    final apiKey = EnvConfig.architectureHubApiKey;
+    if (apiKey.isEmpty || apiKey == 'your_api_key_here') {
+      _logger.e('API 키가 설정되지 않았습니다.');
       throw ApiError(
         type: ApiErrorType.unauthorized,
         message: 'API 키가 설정되지 않았습니다.',
