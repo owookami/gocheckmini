@@ -7,7 +7,7 @@ import '../models/standard_region_model.dart';
 
 /// 행정안전부 표준 지역 코드 서비스
 class StandardRegionService {
-  static const String _baseUrl = 'http://apis.data.go.kr';
+  static const String _baseUrl = 'https://apis.data.go.kr';
   static const String _endpoint = '/1741000/StanReginCd/getStanReginCdList';
 
   late final Dio _dio;

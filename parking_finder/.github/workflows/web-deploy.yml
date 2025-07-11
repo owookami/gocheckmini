@@ -25,14 +25,19 @@ jobs:
       run: flutter pub get
     
     - name: Build Flutter web
+      env:
+        PUBLIC_DATA_API_KEY: ${{ secrets.PUBLIC_DATA_API_KEY }}
+        ARCHITECTURE_HUB_API_KEY: ${{ secrets.ARCHITECTURE_HUB_API_KEY }}
+        STANDARD_REGION_API_KEY: ${{ secrets.STANDARD_REGION_API_KEY }}
+        NAVER_MAP_CLIENT_ID: ${{ secrets.NAVER_MAP_CLIENT_ID }}
       run: |
         echo "Building Flutter web app..."
         flutter build web \
           --base-href="/gocheckmini/" \
-          --dart-define=PUBLIC_DATA_API_KEY=${{ secrets.PUBLIC_DATA_API_KEY }} \
-          --dart-define=ARCHITECTURE_HUB_API_KEY=${{ secrets.ARCHITECTURE_HUB_API_KEY }} \
-          --dart-define=STANDARD_REGION_API_KEY=${{ secrets.STANDARD_REGION_API_KEY }} \
-          --dart-define=NAVER_MAP_CLIENT_ID=${{ secrets.NAVER_MAP_CLIENT_ID }} \
+          --dart-define=PUBLIC_DATA_API_KEY="${PUBLIC_DATA_API_KEY}" \
+          --dart-define=ARCHITECTURE_HUB_API_KEY="${ARCHITECTURE_HUB_API_KEY}" \
+          --dart-define=STANDARD_REGION_API_KEY="${STANDARD_REGION_API_KEY}" \
+          --dart-define=NAVER_MAP_CLIENT_ID="${NAVER_MAP_CLIENT_ID}" \
           --dart-define=FLUTTER_WEB_USE_SKIA=true
         echo "Build completed!"
         ls -la build/web/
