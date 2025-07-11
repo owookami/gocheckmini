@@ -7,6 +7,7 @@ import '../../data/models/standard_region_model.dart';
 import '../../data/models/parking_model.dart';
 import '../../data/services/standard_region_service.dart';
 import '../../data/services/parking_search_service.dart';
+import '../../../../core/utils/web_utils.dart';
 import 'parking_search_result_screen.dart';
 import 'favorites_screen.dart';
 
@@ -307,6 +308,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 환경 정보 배너
+            _buildEnvironmentInfoBanner(),
+            const SizedBox(height: 16),
+            
             // 검색 타입 선택
             _buildSearchTypeSection(),
             const SizedBox(height: 20),
@@ -385,6 +390,56 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             _buildStructureAnalysisButton(),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 환경 정보 배너
+  Widget _buildEnvironmentInfoBanner() {
+    if (!WebUtils.isWebEnvironment) {
+      return const SizedBox.shrink(); // 모바일에서는 표시하지 않음
+    }
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: Colors.blue.shade600,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '웹 버전 정보',
+                  style: TextStyle(
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  WebUtils.getEnvironmentMessage(),
+                  style: TextStyle(
+                    color: Colors.blue.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
