@@ -1,9 +1,8 @@
 import 'dart:convert';
-import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/config/env_config.dart';
-import '../../../../core/utils/web_utils.dart';
 import '../models/parking_lot_model.dart';
 import '../../domain/entities/parking_lot.dart';
 
@@ -28,33 +27,8 @@ class ParkingSearchService {
   static const String _structureEndpoint =
       '/1613000/ArchPmsHubService/getApHdcrMgmRgstInfo';
 
-  late final Dio _dio;
+  final http.Client _client = http.Client();
   final Logger _logger = Logger();
-
-  ParkingSearchService() {
-    _dio = Dio();
-    _dio.options.baseUrl = _baseUrl;
-    _dio.options.connectTimeout = const Duration(seconds: 15);
-    _dio.options.receiveTimeout = const Duration(seconds: 15);
-
-    // JSON 응답 처리를 위한 헤더 설정
-    _dio.options.headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'User-Agent': 'Flutter/1.0',
-    };
-
-    // 로깅 인터셉터 추가
-    _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: false, // 큰 응답 때문에 false로 설정
-        requestHeader: false,
-        responseHeader: false,
-        logPrint: (obj) => _logger.d('🌐 $obj'),
-      ),
-    );
-  }
 
   /// API 키 가져오기
   String get _apiKey {
@@ -68,73 +42,29 @@ class ParkingSearchService {
     return key;
   }
 
-  /// 쿼리 파라미터를 URL에 포함시키는 헬퍼 메서드
-  String _buildUrlWithParams(String baseUrl, Map<String, dynamic> params) {
-    final uri = Uri.parse(baseUrl);
-    final newUri = uri.replace(queryParameters: {
-      ...uri.queryParameters,
-      ...params.map((key, value) => MapEntry(key, value.toString()))
-    });
-    return newUri.toString();
-  }
-
-  /// 웹 환경에서 API 호출을 위한 헬퍼 메서드 (프록시 실패 시 재시도)
-  Future<Response> _makeApiCall(String endpoint, Map<String, dynamic> queryParameters) async {
-    if (kIsWeb) {
-      // 웹 환경: 프록시를 통해 호출
-      final fullUrl = _buildUrlWithParams('$_baseUrl$endpoint', queryParameters);
-      
-      // 최대 3번 시도 (다른 프록시 사용)
-      for (int attempt = 0; attempt < 3; attempt++) {
-        try {
-          final proxiedUrl = attempt == 0 
-              ? WebUtils.getApiUrl(fullUrl)
-              : WebUtils.getNextProxyUrl(fullUrl);
-          
-          _logger.d('🔍 프록시 시도 ${attempt + 1}: $proxiedUrl');
-          
-          final response = await _dio.get(
-            proxiedUrl,
-            options: Options(
-              headers: {}, // 웹에서는 헤더 제거
-              sendTimeout: Duration(seconds: 10),
-              receiveTimeout: Duration(seconds: 10),
-            ),
-          );
-          
-          // allorigins.win/get 사용 시 JSON 래핑 처리
-          if (proxiedUrl.contains('allorigins.win/get')) {
-            final jsonData = response.data;
-            if (jsonData is Map && jsonData.containsKey('contents')) {
-              // contents 필드에서 실제 응답 데이터 추출
-              response.data = jsonData['contents'];
-            }
-          }
-          
-          _logger.i('✅ 프록시 성공 (시도 ${attempt + 1})');
-          return response;
-          
-        } catch (e) {
-          _logger.w('⚠️ 프록시 시도 ${attempt + 1} 실패: $e');
-          if (attempt == 2) {
-            _logger.e('❌ 모든 프록시 실패');
-            rethrow;
-          }
-        }
-      }
-      
-      throw Exception('모든 프록시 서비스 사용 불가');
-      
-    } else {
-      // 모바일 환경: 일반적인 호출
-      _logger.d('🔍 요청 URL: $endpoint');
-      _logger.d('🔍 요청 파라미터: $queryParameters');
-      
-      return await _dio.get(
-        endpoint,
-        queryParameters: queryParameters,
-      );
-    }
+  /// API 호출 헬퍼 메서드 (지역 선택과 동일한 방식)
+  Future<http.Response> _makeApiCall(String endpoint, Map<String, dynamic> queryParameters) async {
+    // 모든 환경에서 직접 API 호출 (지역 선택과 동일)
+    
+    final uri = Uri.parse('$_baseUrl$endpoint').replace(
+      queryParameters: queryParameters.map((key, value) => MapEntry(key, value.toString())),
+    );
+    
+    _logger.d('🔍 요청 URL: $uri');
+    
+    final response = await _client
+        .get(
+          uri,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
+            if (!kIsWeb) 'User-Agent': 'ParkingFinderApp/1.0',
+          },
+        )
+        .timeout(const Duration(seconds: 30));
+    
+    _logger.i('📨 응답 상태 코드: ${response.statusCode}');
+    return response;
   }
 
   /// 주차장 검색 수행 (페이지네이션 지원)
@@ -185,58 +115,35 @@ class ParkingSearchService {
         _logger.d('✅ 페이지 $currentPage API 응답 수신: ${response.statusCode}');
 
         if (response.statusCode == 200) {
-          // 응답 데이터 처리
-          dynamic responseData = response.data;
-          _logger.d('📊 응답 데이터 타입: ${responseData.runtimeType}');
+          // 응답 데이터 처리 (지역 선택과 동일한 방식)
+          _logger.d('📊 응답 길이: ${response.body.length}');
 
-          // 응답이 비어있는지 확인
-          if (responseData == null) {
-            _logger.w('⚠️ 페이지 $currentPage 응답이 null입니다');
+          if (response.body.isEmpty) {
+            _logger.w('⚠️ 페이지 $currentPage 응답이 비어있습니다');
             break;
           }
 
           Map<String, dynamic> data;
-
-          if (responseData is Map<String, dynamic>) {
-            // 이미 JSON 객체인 경우
-            data = responseData;
-            _logger.d('📊 JSON 객체로 직접 수신: ${data.keys}');
-          } else if (responseData is String) {
-            // 문자열 응답인 경우 JSON 파싱
-            final responseString = responseData as String;
-            _logger.d('📊 문자열 응답 길이: ${responseString.length}');
-
-            if (responseString.isEmpty) {
-              _logger.w('⚠️ 페이지 $currentPage 응답 문자열이 비어있습니다');
-              break;
-            }
-
-            // XML 오류 응답 체크
-            if (responseString.contains('<OpenAPI_ServiceResponse>')) {
-              _logger.e('❌ 페이지 $currentPage API 오류 응답: $responseString');
-              if (responseString.contains('SERVICE ERROR')) {
-                throw Exception('API 서비스 오류: 인증 또는 요청 파라미터에 문제가 있습니다.');
-              } else if (responseString.contains('HTTP ROUTING ERROR')) {
-                throw Exception('API 라우팅 오류: 요청 URL 또는 파라미터에 문제가 있습니다.');
-              } else {
-                throw Exception('알 수 없는 API 오류가 발생했습니다.');
-              }
-            }
-
-            // JSON 파싱 시도
-            try {
-              data = jsonDecode(responseString) as Map<String, dynamic>;
-              _logger.d('📊 JSON 파싱 성공: ${data.keys}');
-            } catch (parseError) {
-              _logger.e('❌ 페이지 $currentPage JSON 파싱 실패: $parseError');
-              _logger.d('📊 파싱 실패한 응답: ${responseString.substring(0, 200)}...');
-              break;
-            }
-          } else {
-            _logger.e(
-              '❌ 페이지 $currentPage 예상치 못한 응답 타입: ${responseData.runtimeType}',
-            );
+          
+          try {
+            data = json.decode(response.body) as Map<String, dynamic>;
+            _logger.d('📊 JSON 파싱 성공: ${data.keys}');
+          } catch (e) {
+            _logger.e('❌ JSON 파싱 실패: $e');
+            _logger.d('📄 응답 내용 (처음 500자): ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}');
             break;
+          }
+
+          // XML 오류 응답 체크
+          if (response.body.contains('<OpenAPI_ServiceResponse>')) {
+            _logger.e('❌ 페이지 $currentPage API 오류 응답');
+            if (response.body.contains('SERVICE ERROR')) {
+              throw Exception('API 서비스 오류: 인증 또는 요청 파라미터에 문제가 있습니다.');
+            } else if (response.body.contains('HTTP ROUTING ERROR')) {
+              throw Exception('API 라우팅 오류: 요청 URL 또는 파라미터에 문제가 있습니다.');
+            } else {
+              throw Exception('알 수 없는 API 오류가 발생했습니다.');
+            }
           }
 
           // API 응답 검증
@@ -486,6 +393,6 @@ class ParkingSearchService {
 
   /// 리소스 정리
   void dispose() {
-    _dio.close();
+    _client.close();
   }
 }
