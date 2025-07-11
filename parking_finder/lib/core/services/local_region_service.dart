@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import '../../features/parking/data/models/standard_region_model.dart';
 
@@ -21,6 +22,7 @@ class LocalRegionService {
 
     try {
       _logger.i('📍 로컬 지역 데이터 로드 시작');
+      if (kIsWeb) print('📍 [WEB] 로컬 지역 데이터 로드 시작');
       
       final String content = await rootBundle.loadString('assets/data/sigungu.txt');
       final List<String> lines = content.split('\n');
@@ -47,10 +49,12 @@ class LocalRegionService {
       
       _cachedRegionData = regionData;
       _logger.i('✅ 로컬 지역 데이터 로드 완료: ${regionData.length}개');
+      if (kIsWeb) print('✅ [WEB] 로컬 지역 데이터 로드 완료: ${regionData.length}개');
       
       return regionData;
     } catch (e) {
       _logger.e('❌ 로컬 지역 데이터 로드 실패: $e');
+      if (kIsWeb) print('❌ [WEB] 로컬 지역 데이터 로드 실패: $e');
       return [];
     }
   }
@@ -59,9 +63,17 @@ class LocalRegionService {
   Future<List<StandardRegion>> getSidoList() async {
     final regionData = await _loadRegionData();
     
+    _logger.i('🔍 시도 목록 조회 시작: 총 ${regionData.length}개 지역 데이터');
+    if (kIsWeb) print('🔍 [WEB] 시도 목록 조회 시작: 총 ${regionData.length}개 지역 데이터');
+    
     // 시도는 코드가 5자리이고 끝 3자리가 '000'인 것들
     final sidoList = regionData
-        .where((region) => region.code.length == 5 && region.code.endsWith('000'))
+        .where((region) {
+          final isCorrectLength = region.code.length == 5;
+          final endsWith000 = region.code.endsWith('000');
+          _logger.d('🔍 시도 체크: ${region.name} (${region.code}) - 길이:$isCorrectLength, 000끝:$endsWith000');
+          return isCorrectLength && endsWith000;
+        })
         .map((region) => StandardRegion(
           regionCd: region.code,
           sidoCd: region.code.substring(0, 2),
@@ -79,6 +91,12 @@ class LocalRegionService {
     });
     
     _logger.i('📍 시도 목록 조회 완료: ${sidoList.length}개');
+    
+    // 결과 로깅
+    for (final sido in sidoList.take(3)) {
+      _logger.d('📋 시도 결과: ${sido.locataddNm} (코드: ${sido.regionCd}, 시도코드: ${sido.sidoCd})');
+    }
+    
     return sidoList.cast<StandardRegion>();
   }
 
@@ -86,18 +104,29 @@ class LocalRegionService {
   Future<List<StandardRegion>> getSigunguList(String sidoCode) async {
     final regionData = await _loadRegionData();
     
-    // 해당 시도의 시군구들 (코드가 5자리이고 시도코드로 시작하며 끝자리가 '0'이 아닌 것들)
+    _logger.i('🔍 시군구 조회 시작: sidoCode=$sidoCode');
+    if (kIsWeb) print('🔍 [WEB] 시군구 조회 시작: sidoCode=$sidoCode');
+    
+    // 시도코드를 2자리로 변환 (11000 -> 11)
+    final sidoPrefix = sidoCode.length >= 2 ? sidoCode.substring(0, 2) : sidoCode;
+    
+    // 해당 시도의 시군구들 찾기
     final sigunguList = regionData
-        .where((region) => 
-          region.code.length == 5 && 
-          region.code.startsWith(sidoCode) && 
-          !region.code.endsWith('000') &&
-          !region.name.contains('특별시') &&
-          !region.name.contains('광역시'))
+        .where((region) {
+          final isCorrectLength = region.code.length == 5;
+          final startsWithSido = region.code.startsWith(sidoPrefix);
+          final notEndsWith000 = !region.code.endsWith('000');
+          final isDistrict = region.name.contains('구') || region.name.contains('군');
+          final notMainCity = !region.name.contains('특별시') && !region.name.contains('광역시');
+          
+          _logger.d('🔍 지역 체크: ${region.name} (${region.code}) - 길이:$isCorrectLength, 시도:$startsWithSido, 비000:$notEndsWith000, 구군:$isDistrict, 비시도:$notMainCity');
+          
+          return isCorrectLength && startsWithSido && notEndsWith000 && isDistrict && notMainCity;
+        })
         .map((region) => StandardRegion(
           regionCd: region.code,
-          sidoCd: sidoCode,
-          sggCd: region.code,
+          sidoCd: sidoPrefix + '000',  // 표준 시도 코드 형식
+          sggCd: region.code.substring(2), // 뒤 3자리를 시군구 코드로
           umdCd: '000',
           locataddNm: region.name,
         ))
@@ -107,6 +136,13 @@ class LocalRegionService {
     sigunguList.sort((a, b) => (a.locataddNm ?? '').compareTo(b.locataddNm ?? ''));
     
     _logger.i('📍 시군구 목록 조회 완료: ${sigunguList.length}개 (시도코드: $sidoCode)');
+    if (kIsWeb) print('📍 [WEB] 시군구 목록 조회 완료: ${sigunguList.length}개 (시도코드: $sidoCode)');
+    
+    // 결과 로깅
+    for (final region in sigunguList.take(3)) {
+      _logger.d('📋 결과 예시: ${region.locataddNm} (${region.regionCd})');
+    }
+    
     return sigunguList.cast<StandardRegion>();
   }
 
