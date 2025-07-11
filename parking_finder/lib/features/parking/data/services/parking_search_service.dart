@@ -75,8 +75,8 @@ class ParkingSearchService {
         _logger.i('🔄 웹 환경 - FastAPI 프록시 서버 사용');
         
         try {
-          // FastAPI 프록시 서버 URL (Railway 배포 후 업데이트 필요)
-          const String proxyBaseUrl = 'https://parking-proxy-production.up.railway.app'; // 배포 후 실제 URL로 변경
+          // FastAPI 프록시 서버 URL (Render 배포 후 업데이트 필요)
+          const String proxyBaseUrl = 'https://parking-proxy-xyz.onrender.com'; // Render 배포 후 실제 URL로 변경
           
           // FastAPI 프록시 요청
           final proxyUri = Uri.parse('$proxyBaseUrl/proxy').replace(
@@ -88,6 +88,7 @@ class ParkingSearchService {
           
           _logger.d('🔗 FastAPI 프록시 URL: $proxyUri');
           
+          // Render 콜드 스타트를 고려한 긴 타임아웃
           final response = await _client
               .get(
                 proxyUri,
@@ -96,7 +97,7 @@ class ParkingSearchService {
                   'Content-Type': 'application/json; charset=utf-8',
                 },
               )
-              .timeout(const Duration(seconds: 15));
+              .timeout(const Duration(seconds: 45)); // 콜드 스타트 대응
           
           if (response.statusCode == 200) {
             _logger.i('✅ FastAPI 프록시 성공');
