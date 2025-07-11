@@ -86,9 +86,6 @@ dev_dependencies:
   freezed: ^2.5.2
   json_serializable: ^6.6.0
   sqflite_common_ffi: ^2.3.0+4
-  
-  # Splash Screen
-  flutter_native_splash: ^2.3.10
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -150,32 +147,4 @@ flutter:
   #       - asset: assets/fonts/Pretendard-Bold.ttf
   #         weight: 700
 
-# Splash Screen Configuration
-flutter_native_splash:
-  # 스플래시 화면 배경색 (주차장 앱에 어울리는 파란색)
-  color: "#1565C0"
-  
-  # 아이콘 이미지
-  image: assets/images/icon.png
-  
-  # 브랜딩 이미지 (선택사항)
-  branding: assets/images/icon.png
-  branding_mode: bottom
-  
-  # 다크 모드 설정
-  color_dark: "#0D47A1"
-  image_dark: assets/images/icon.png
-  branding_dark: assets/images/icon.png
-  
-  # Android 설정
-  android_12:
-    image: assets/images/icon.png
-    color: "#1565C0"
-    image_dark: assets/images/icon.png
-    color_dark: "#0D47A1"
-  
-  # iOS 설정
-  ios: true
-  
-  # 웹 설정 (필요시)
-  web: false
+
