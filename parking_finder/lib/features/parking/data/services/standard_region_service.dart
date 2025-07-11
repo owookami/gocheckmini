@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 
 import '../../../../core/config/env_config.dart';
@@ -25,8 +26,12 @@ class StandardRegionService {
     // 쿼리 파라미터 인코딩 설정
     _dio.options.listFormat = ListFormat.multiCompatible;
 
-    // 기본 헤더 설정 (최소한으로)
-    _dio.options.headers = {'User-Agent': 'ParkingFinderApp/1.0'};
+    // 웹 환경에서는 User-Agent 헤더 제거 (CORS 문제 방지)
+    if (kIsWeb) {
+      _dio.options.headers = {};
+    } else {
+      _dio.options.headers = {'User-Agent': 'ParkingFinderApp/1.0'};
+    }
 
     // 로깅 인터셉터 추가
     _dio.interceptors.add(
