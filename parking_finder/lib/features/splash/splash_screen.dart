@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter/foundation.dart';
 
 /// 커스텀 스플래시 화면
 class SplashScreen extends StatefulWidget {
@@ -46,11 +46,15 @@ class _SplashScreenState extends State<SplashScreen>
     // 애니메이션 시작
     _animationController.forward();
 
-    // 2.5초 후 스플래시 화면 제거
+    // 2.5초 후 스플래시 화면 제거 (모바일 전용)
     Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        FlutterNativeSplash.remove();
-        // 추가적인 화면 전환 로직이 필요하다면 여기에 추가
+      if (mounted && !kIsWeb) {
+        try {
+          // FlutterNativeSplash.remove();
+          // 추가적인 화면 전환 로직이 필요하다면 여기에 추가
+        } catch (e) {
+          print('네이티브 스플래시 제거 실패: $e');
+        }
       }
     });
   }

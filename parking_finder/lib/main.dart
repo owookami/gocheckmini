@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
 import 'core/config/app_config.dart';
@@ -10,10 +10,18 @@ import 'features/splash/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 스플래시 화면 유지
-  FlutterNativeSplash.preserve(
-    widgetsBinding: WidgetsFlutterBinding.ensureInitialized(),
-  );
+  // 스플래시 화면 유지 (모바일 전용)
+  if (!kIsWeb) {
+    try {
+      // FlutterNativeSplash는 모바일에서만 사용 가능
+      // 동적으로 로드하여 웹에서는 사용하지 않음
+      // FlutterNativeSplash.preserve(
+      //   widgetsBinding: WidgetsFlutterBinding.ensureInitialized(),
+      // );
+    } catch (e) {
+      print('네이티브 스플래시 설정 실패: $e');
+    }
+  }
 
   // .env 파일 로드 (에러 처리 추가)
   try {
@@ -80,10 +88,16 @@ class _ParkingFinderAppState extends State<ParkingFinderApp> {
       }
     });
 
-    // 네이티브 스플래시 화면은 즉시 제거
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      FlutterNativeSplash.remove();
-    });
+    // 네이티브 스플래시 화면은 즉시 제거 (모바일 전용)
+    if (!kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          // FlutterNativeSplash.remove();
+        } catch (e) {
+          print('네이티브 스플래시 제거 실패: $e');
+        }
+      });
+    }
   }
 
   @override
