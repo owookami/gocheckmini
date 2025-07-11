@@ -70,76 +70,70 @@ class ParkingSearchService {
     } catch (e) {
       _logger.w('⚠️ 직접 호출 실패: $e');
       
-      // 웹 환경에서만 프록시 폴백 시도
+      // 웹 환경에서만 FastAPI 프록시 서버 사용
       if (kIsWeb) {
-        _logger.i('🔄 웹 환경 - 프록시 폴백 시도');
+        _logger.i('🔄 웹 환경 - FastAPI 프록시 서버 사용');
         
         try {
-          // JSONP 방식 시도 (공공데이터 API가 지원하는지 확인)
-          final jsonpUri = uri.replace(queryParameters: {
-            ...uri.queryParameters,
-            'callback': 'jsonp_callback',
-          });
+          // FastAPI 프록시 서버 URL (Railway 배포 후 업데이트 필요)
+          const String proxyBaseUrl = 'https://parking-proxy-production.up.railway.app'; // 배포 후 실제 URL로 변경
           
-          _logger.d('🔗 JSONP 시도: $jsonpUri');
+          // FastAPI 프록시 요청
+          final proxyUri = Uri.parse('$proxyBaseUrl/proxy').replace(
+            queryParameters: {
+              'url': '$_baseUrl$endpoint',
+              ...queryParameters.map((key, value) => MapEntry(key, value.toString())),
+            },
+          );
           
-          final jsonpResponse = await _client
-              .get(
-                jsonpUri,
-                headers: {
-                  'Accept': 'application/javascript, application/json',
-                  'Content-Type': 'application/json; charset=utf-8',
-                },
-              )
-              .timeout(const Duration(seconds: 8));
-          
-          if (jsonpResponse.statusCode == 200 && jsonpResponse.body.isNotEmpty) {
-            // JSONP 응답 처리
-            String responseBody = jsonpResponse.body;
-            if (responseBody.startsWith('jsonp_callback(') && responseBody.endsWith(');')) {
-              // JSONP 콜백 제거하고 JSON 추출
-              responseBody = responseBody.substring(15, responseBody.length - 2);
-              _logger.i('✅ JSONP 성공');
-              return http.Response(responseBody, jsonpResponse.statusCode, headers: jsonpResponse.headers);
-            } else if (responseBody.startsWith('{') || responseBody.startsWith('[')) {
-              // 일반 JSON 응답
-              _logger.i('✅ JSON 직접 호출 성공');
-              return jsonpResponse;
-            }
-          }
-          
-          _logger.w('⚠️ JSONP 실패 - 프록시 시도');
-          
-          // 프록시 폴백
-          final proxiedUrl = 'https://api.allorigins.win/get?url=${Uri.encodeComponent(uri.toString())}';
-          _logger.d('🔗 프록시 URL: $proxiedUrl');
+          _logger.d('🔗 FastAPI 프록시 URL: $proxyUri');
           
           final response = await _client
               .get(
-                Uri.parse(proxiedUrl),
+                proxyUri,
                 headers: {
                   'Accept': 'application/json',
                   'Content-Type': 'application/json; charset=utf-8',
                 },
               )
-              .timeout(const Duration(seconds: 8));
+              .timeout(const Duration(seconds: 15));
           
           if (response.statusCode == 200) {
-            final jsonData = json.decode(response.body);
-            if (jsonData is Map && jsonData.containsKey('contents')) {
-              final contentsData = jsonData['contents'];
-              if (contentsData is String) {
-                _logger.i('✅ 프록시 폴백 성공');
-                return http.Response(contentsData, response.statusCode, headers: response.headers);
+            _logger.i('✅ FastAPI 프록시 성공');
+            return response;
+          } else {
+            _logger.e('❌ FastAPI 프록시 실패: ${response.statusCode}');
+            
+            // FastAPI 프록시 실패 시 기존 프록시 폴백
+            _logger.w('⚠️ 기존 프록시로 폴백');
+            
+            final fallbackUrl = 'https://api.allorigins.win/get?url=${Uri.encodeComponent(uri.toString())}';
+            final fallbackResponse = await _client
+                .get(
+                  Uri.parse(fallbackUrl),
+                  headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json; charset=utf-8',
+                  },
+                )
+                .timeout(const Duration(seconds: 10));
+            
+            if (fallbackResponse.statusCode == 200) {
+              final jsonData = json.decode(fallbackResponse.body);
+              if (jsonData is Map && jsonData.containsKey('contents')) {
+                final contentsData = jsonData['contents'];
+                if (contentsData is String) {
+                  _logger.i('✅ 폴백 프록시 성공');
+                  return http.Response(contentsData, fallbackResponse.statusCode, headers: fallbackResponse.headers);
+                }
               }
             }
+            
+            throw Exception('모든 프록시 실패');
           }
           
-          _logger.e('❌ 프록시 응답 처리 실패');
-          rethrow;
-          
         } catch (proxyError) {
-          _logger.e('❌ 프록시 폴백도 실패: $proxyError');
+          _logger.e('❌ 모든 프록시 실패: $proxyError');
           rethrow;
         }
       } else {
