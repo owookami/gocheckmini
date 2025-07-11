@@ -43,24 +43,76 @@ class ParkingSearchService {
     return key;
   }
 
-  /// API 호출 헬퍼 메서드 (웹에서만 프록시 사용)
+  /// API 호출 헬퍼 메서드 (직접 호출 우선, 실패 시 프록시)
   Future<http.Response> _makeApiCall(String endpoint, Map<String, dynamic> queryParameters) async {
-    if (kIsWeb) {
-      // 웹 환경: 주차장 검색 API는 CORS 문제로 프록시 사용
-      final fullUrl = Uri.parse('$_baseUrl$endpoint').replace(
-        queryParameters: queryParameters.map((key, value) => MapEntry(key, value.toString())),
-      ).toString();
+    final uri = Uri.parse('$_baseUrl$endpoint').replace(
+      queryParameters: queryParameters.map((key, value) => MapEntry(key, value.toString())),
+    );
+    
+    _logger.d('🔍 API 호출 시도: $uri');
+    
+    // 먼저 직접 호출 시도 (웹/모바일 모두)
+    try {
+      final response = await _client
+          .get(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json; charset=utf-8',
+              if (!kIsWeb) 'User-Agent': 'ParkingFinderApp/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
       
-      _logger.d('🔍 웹 환경 - 프록시 사용: $fullUrl');
+      _logger.i('✅ 직접 호출 성공: ${response.statusCode}');
+      return response;
       
-      // 여러 프록시 시도 (최대 3번)
-      for (int attempt = 0; attempt < 3; attempt++) {
+    } catch (e) {
+      _logger.w('⚠️ 직접 호출 실패: $e');
+      
+      // 웹 환경에서만 프록시 폴백 시도
+      if (kIsWeb) {
+        _logger.i('🔄 웹 환경 - 프록시 폴백 시도');
+        
         try {
-          final proxiedUrl = attempt == 0 
-              ? WebUtils.getApiUrl(fullUrl)
-              : WebUtils.getNextProxyUrl(fullUrl);
+          // JSONP 방식 시도 (공공데이터 API가 지원하는지 확인)
+          final jsonpUri = uri.replace(queryParameters: {
+            ...uri.queryParameters,
+            'callback': 'jsonp_callback',
+          });
           
-          _logger.d('🔗 프록시 시도 ${attempt + 1}: $proxiedUrl');
+          _logger.d('🔗 JSONP 시도: $jsonpUri');
+          
+          final jsonpResponse = await _client
+              .get(
+                jsonpUri,
+                headers: {
+                  'Accept': 'application/javascript, application/json',
+                  'Content-Type': 'application/json; charset=utf-8',
+                },
+              )
+              .timeout(const Duration(seconds: 8));
+          
+          if (jsonpResponse.statusCode == 200 && jsonpResponse.body.isNotEmpty) {
+            // JSONP 응답 처리
+            String responseBody = jsonpResponse.body;
+            if (responseBody.startsWith('jsonp_callback(') && responseBody.endsWith(');')) {
+              // JSONP 콜백 제거하고 JSON 추출
+              responseBody = responseBody.substring(15, responseBody.length - 2);
+              _logger.i('✅ JSONP 성공');
+              return http.Response(responseBody, jsonpResponse.statusCode, headers: jsonpResponse.headers);
+            } else if (responseBody.startsWith('{') || responseBody.startsWith('[')) {
+              // 일반 JSON 응답
+              _logger.i('✅ JSON 직접 호출 성공');
+              return jsonpResponse;
+            }
+          }
+          
+          _logger.w('⚠️ JSONP 실패 - 프록시 시도');
+          
+          // 프록시 폴백
+          final proxiedUrl = 'https://api.allorigins.win/get?url=${Uri.encodeComponent(uri.toString())}';
+          _logger.d('🔗 프록시 URL: $proxiedUrl');
           
           final response = await _client
               .get(
@@ -70,64 +122,30 @@ class ParkingSearchService {
                   'Content-Type': 'application/json; charset=utf-8',
                 },
               )
-              .timeout(const Duration(seconds: 15)); // 타임아웃 단축
-          
-          _logger.i('📨 프록시 응답 상태 코드: ${response.statusCode}');
+              .timeout(const Duration(seconds: 8));
           
           if (response.statusCode == 200) {
-            // allorigins.win 응답 처리
-            if (proxiedUrl.contains('allorigins.win')) {
-              try {
-                final jsonData = json.decode(response.body);
-                if (jsonData is Map && jsonData.containsKey('contents')) {
-                  final contentsData = jsonData['contents'];
-                  if (contentsData is String) {
-                    _logger.i('✅ allorigins.win 프록시 성공 (시도 ${attempt + 1})');
-                    return http.Response(contentsData, response.statusCode, headers: response.headers);
-                  }
-                }
-              } catch (e) {
-                _logger.w('⚠️ allorigins 응답 처리 중 오류: $e');
-                continue; // 다음 프록시 시도
+            final jsonData = json.decode(response.body);
+            if (jsonData is Map && jsonData.containsKey('contents')) {
+              final contentsData = jsonData['contents'];
+              if (contentsData is String) {
+                _logger.i('✅ 프록시 폴백 성공');
+                return http.Response(contentsData, response.statusCode, headers: response.headers);
               }
-            } else {
-              // 다른 프록시들은 직접 응답 반환
-              _logger.i('✅ 프록시 성공 (시도 ${attempt + 1})');
-              return response;
             }
           }
           
-        } catch (e) {
-          _logger.w('⚠️ 프록시 시도 ${attempt + 1} 실패: $e');
-          if (attempt == 2) {
-            _logger.e('❌ 모든 프록시 실패');
-            rethrow;
-          }
+          _logger.e('❌ 프록시 응답 처리 실패');
+          rethrow;
+          
+        } catch (proxyError) {
+          _logger.e('❌ 프록시 폴백도 실패: $proxyError');
+          rethrow;
         }
+      } else {
+        // 모바일에서는 직접 호출 실패 시 바로 에러
+        rethrow;
       }
-      
-      throw Exception('모든 프록시 서비스 사용 불가');
-    } else {
-      // 모바일 환경: 직접 API 호출
-      final uri = Uri.parse('$_baseUrl$endpoint').replace(
-        queryParameters: queryParameters.map((key, value) => MapEntry(key, value.toString())),
-      );
-      
-      _logger.d('🔍 모바일 환경 - 직접 호출: $uri');
-      
-      final response = await _client
-          .get(
-            uri,
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json; charset=utf-8',
-              'User-Agent': 'ParkingFinderApp/1.0',
-            },
-          )
-          .timeout(const Duration(seconds: 30));
-      
-      _logger.i('📨 직접 호출 응답 상태 코드: ${response.statusCode}');
-      return response;
     }
   }
 
