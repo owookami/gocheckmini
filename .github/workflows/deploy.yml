@@ -45,7 +45,7 @@ jobs:
     - name: Build web (with debugging)
       run: |
         echo "Building Flutter web app..."
-        flutter build web --base-href="/gocheckmini/" --web-renderer canvaskit --dart-define=FLUTTER_WEB_USE_SKIA=true
+        flutter build web --base-href="/gocheckmini/" --dart-define=FLUTTER_WEB_USE_SKIA=true
         echo "Build completed!"
         ls -la build/web/
       working-directory: ./parking_finder
