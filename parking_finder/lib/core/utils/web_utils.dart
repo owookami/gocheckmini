@@ -1,21 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-/// 웹 환경에서 CORS 문제 없이 지역 데이터를 제공하기 위한 유틸리티
-
-/// 웹/모바일 환경별 기능 제공을 위한 유틸리티
-/// CORS 문제 해결을 위해 웹에서는 로컬 데이터, 모바일에서는 API 사용
+/// 웹 환경에서 CORS 문제 해결을 위한 유틸리티
 class WebUtils {
-  /// 웹 환경에서 로컬 데이터를 사용할지 여부
-  static bool get useLocalDataInWeb => kIsWeb;
-  
-  /// 웹 환경에서 API 호출을 시도할지 여부 (CORS 문제로 비활성화)
-  static bool get shouldAttemptApiInWeb => false;
-  
-  /// 현재 환경이 웹인지 확인
-  static bool get isWebEnvironment => kIsWeb;
-  
-  /// 현재 환경에서 지역 데이터 소스 타입 반환
-  static String get dataSourceType => kIsWeb ? 'local' : 'api';
   // 사용 가능한 CORS 프록시 서비스들
   static const List<String> _corsProxies = [
     'https://cors-proxy.fringe.zone/',
@@ -91,12 +77,6 @@ class WebUtils {
     }
   }
   
-  /// 환경별 안내 메시지 생성
-  static String getEnvironmentMessage() {
-    if (kIsWeb) {
-      return '웹 환경에서는 로컬 지역 데이터를 사용합니다.';
-    } else {
-      return '모바일 환경에서는 실시간 공공 API를 사용합니다.';
-    }
-  }
+  /// 현재 환경이 웹인지 확인
+  static bool get isWebEnvironment => kIsWeb;
 }

@@ -5,18 +5,15 @@ import 'dart:convert';
 
 import '../../../../core/config/env_config.dart';
 import '../../../../core/utils/web_utils.dart';
-import '../../../../core/services/local_region_service.dart';
 import '../models/standard_region_model.dart';
 
 /// 행정안전부 표준 지역 코드 서비스
-/// 웹 환경에서는 로컬 데이터를 사용하고, 모바일에서는 API를 사용합니다.
 class StandardRegionService {
   static const String _baseUrl = 'https://apis.data.go.kr';
   static const String _endpoint = '/1741000/StanReginCd/getStanReginCdList';
 
   late final Dio _dio;
   final Logger _logger = Logger();
-  final LocalRegionService _localRegionService = LocalRegionService();
 
   StandardRegionService() {
     _dio = Dio();
@@ -135,18 +132,6 @@ class StandardRegionService {
   /// 시도 목록 조회 (최상위 지역)
   Future<List<StandardRegion>> getSidoList() async {
     _logger.i('📍 시도 목록 조회 요청');
-    
-    // 웹 환경에서는 로컬 데이터 사용
-    if (WebUtils.useLocalDataInWeb) {
-      try {
-        _logger.i('🌐 웹 환경: 로컬 데이터 사용');
-        return await _localRegionService.getSidoList();
-      } catch (e) {
-        _logger.e('❌ 로컬 데이터 로드 실패, API 사용 시도: $e');
-        // 로컬 데이터 실패 시 API 시도하지 않고 빈 목록 반환
-        return [];
-      }
-    }
 
     try {
       // 요청 파라미터 준비
@@ -284,18 +269,6 @@ class StandardRegionService {
   /// 특정 시도의 시군구 목록 조회
   Future<List<StandardRegion>> getSigunguList(String sidoCode) async {
     _logger.i('📍 시군구 목록 조회 요청: $sidoCode');
-    
-    // 웹 환경에서는 로컬 데이터 사용
-    if (WebUtils.useLocalDataInWeb) {
-      try {
-        _logger.i('🌐 웹 환경: 로컬 데이터 사용');
-        return await _localRegionService.getSigunguList(sidoCode);
-      } catch (e) {
-        _logger.e('❌ 로컬 데이터 로드 실패, API 사용 시도: $e');
-        // 로컬 데이터 실패 시 API 시도하지 않고 빈 목록 반환
-        return [];
-      }
-    }
 
     try {
       // 요청 파라미터 준비
@@ -436,18 +409,6 @@ class StandardRegionService {
     String sggCode,
   ) async {
     _logger.i('📍 읍면동 목록 조회 요청: $sidoCode-$sggCode');
-    
-    // 웹 환경에서는 로컬 데이터 사용
-    if (WebUtils.useLocalDataInWeb) {
-      try {
-        _logger.i('🌐 웹 환경: 로컬 데이터 사용');
-        return await _localRegionService.getUmdList(sidoCode, sggCode);
-      } catch (e) {
-        _logger.e('❌ 로컬 데이터 로드 실패, API 사용 시도: $e');
-        // 로컬 데이터 실패 시 API 시도하지 않고 빈 목록 반환
-        return [];
-      }
-    }
 
     try {
       // 요청 파라미터 준비

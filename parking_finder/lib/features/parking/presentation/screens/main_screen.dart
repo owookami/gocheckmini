@@ -308,10 +308,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 환경 정보 배너
-            _buildEnvironmentInfoBanner(),
-            const SizedBox(height: 16),
-            
             // 검색 타입 선택
             _buildSearchTypeSection(),
             const SizedBox(height: 20),
@@ -394,55 +390,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  /// 환경 정보 배너
-  Widget _buildEnvironmentInfoBanner() {
-    if (!WebUtils.isWebEnvironment) {
-      return const SizedBox.shrink(); // 모바일에서는 표시하지 않음
-    }
-    
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.info_outline,
-            color: Colors.blue.shade600,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '웹 버전 정보',
-                  style: TextStyle(
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  WebUtils.getEnvironmentMessage(),
-                  style: TextStyle(
-                    color: Colors.blue.shade600,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// 검색 타입 선택 섹션
   Widget _buildSearchTypeSection() {
@@ -557,10 +504,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 setState(() {
                   selectedSido = region;
                 });
-                if (region?.regionCd != null) {
-                  _logger.d('📋 선택된 시도: ${region!.locataddNm} - regionCd: ${region.regionCd}, sidoCd: ${region.sidoCd}');
-                  print('📋 [WEB] 선택된 시도: ${region.locataddNm} - regionCd: ${region.regionCd}, sidoCd: ${region.sidoCd}');
-                  _loadSigunguList(region.regionCd!);
+                if (region?.sidoCd != null) {
+                  _loadSigunguList(region!.sidoCd!);
                 }
               },
               itemLabel: (region) => region.displayName,
@@ -579,8 +524,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 setState(() {
                   selectedSigungu = region;
                 });
-                if (region?.sggCd != null && selectedSido?.regionCd != null) {
-                  _loadUmdList(selectedSido!.regionCd!, region!.sggCd!);
+                if (region?.sggCd != null && selectedSido?.sidoCd != null) {
+                  _loadUmdList(selectedSido!.sidoCd!, region!.sggCd!);
                 }
               },
               itemLabel: (region) => region.displayName,
