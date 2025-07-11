@@ -26,7 +26,10 @@ class StandardRegionService {
     // 쿼리 파라미터 인코딩 설정
     _dio.options.listFormat = ListFormat.multiCompatible;
 
-    _dio.options.headers = {'User-Agent': 'ParkingFinderApp/1.0'};
+    // 웹 환경에서는 User-Agent 헤더 설정 불가 (브라우저 보안 정책)
+    if (!kIsWeb) {
+      _dio.options.headers = {'User-Agent': 'ParkingFinderApp/1.0'};
+    }
 
     // 로깅 인터셉터 추가
     _dio.interceptors.add(
