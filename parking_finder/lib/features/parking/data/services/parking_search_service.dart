@@ -75,8 +75,8 @@ class ParkingSearchService {
         _logger.i('🔄 웹 환경 - FastAPI 프록시 서버 사용');
         
         try {
-          // FastAPI 프록시 서버 URL (Render 배포 후 업데이트 필요)
-          const String proxyBaseUrl = 'https://parking-proxy-xyz.onrender.com'; // Render 배포 후 실제 URL로 변경
+          // FastAPI 프록시 서버 URL (Render 배포 완료)
+          const String proxyBaseUrl = 'https://gocheckmini.onrender.com';
           
           // FastAPI 프록시 요청
           final proxyUri = Uri.parse('$proxyBaseUrl/proxy').replace(
