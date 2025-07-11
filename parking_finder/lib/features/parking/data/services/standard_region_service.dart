@@ -36,7 +36,7 @@ class StandardRegionService {
       LogInterceptor(
         requestBody: true,
         responseBody: true,
-        requestHeader: true,
+        requestHeader: !kIsWeb, // 웹에서는 헤더 로깅 비활성화
         responseHeader: false,
         logPrint: (object) => _logger.d(object),
       ),
