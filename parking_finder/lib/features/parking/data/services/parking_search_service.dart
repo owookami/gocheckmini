@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/config/env_config.dart';
+import '../../../../core/utils/web_utils.dart';
 import '../models/parking_lot_model.dart';
 import '../../domain/entities/parking_lot.dart';
 
@@ -66,6 +68,43 @@ class ParkingSearchService {
     return key;
   }
 
+  /// 쿼리 파라미터를 URL에 포함시키는 헬퍼 메서드
+  String _buildUrlWithParams(String baseUrl, Map<String, dynamic> params) {
+    final uri = Uri.parse(baseUrl);
+    final newUri = uri.replace(queryParameters: {
+      ...uri.queryParameters,
+      ...params.map((key, value) => MapEntry(key, value.toString()))
+    });
+    return newUri.toString();
+  }
+
+  /// 웹 환경에서 API 호출을 위한 헬퍼 메서드
+  Future<Response> _makeApiCall(String endpoint, Map<String, dynamic> queryParameters) async {
+    if (kIsWeb) {
+      // 웹 환경: 프록시를 통해 호출하고 쿼리 파라미터를 URL에 포함
+      final fullUrl = _buildUrlWithParams('$_baseUrl$endpoint', queryParameters);
+      final proxiedUrl = WebUtils.getApiUrl(fullUrl);
+      
+      _logger.d('🔍 프록시 URL: $proxiedUrl');
+      
+      return await _dio.get(
+        proxiedUrl,
+        options: Options(
+          headers: {}, // 웹에서는 헤더 제거
+        ),
+      );
+    } else {
+      // 모바일 환경: 일반적인 호출
+      _logger.d('🔍 요청 URL: $endpoint');
+      _logger.d('🔍 요청 파라미터: $queryParameters');
+      
+      return await _dio.get(
+        endpoint,
+        queryParameters: queryParameters,
+      );
+    }
+  }
+
   /// 주차장 검색 수행 (페이지네이션 지원)
   Future<List<ParkingLotModel>> searchParking({
     required ParkingSearchType searchType,
@@ -109,10 +148,7 @@ class ParkingSearchService {
         _logger.d('🔍 엔드포인트: $endpoint');
         _logger.d('🔍 요청 파라미터: $queryParameters');
 
-        final response = await _dio.get(
-          endpoint,
-          queryParameters: queryParameters,
-        );
+        final response = await _makeApiCall(endpoint, queryParameters);
 
         _logger.d('✅ 페이지 $currentPage API 응답 수신: ${response.statusCode}');
 

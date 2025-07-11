@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 
 import '../../../../core/config/env_config.dart';
+import '../../../../core/utils/web_utils.dart';
 import '../models/standard_region_model.dart';
 
 /// 행정안전부 표준 지역 코드 서비스
@@ -57,6 +58,43 @@ class StandardRegionService {
     return key;
   }
 
+  /// 쿼리 파라미터를 URL에 포함시키는 헬퍼 메서드
+  String _buildUrlWithParams(String baseUrl, Map<String, dynamic> params) {
+    final uri = Uri.parse(baseUrl);
+    final newUri = uri.replace(queryParameters: {
+      ...uri.queryParameters,
+      ...params.map((key, value) => MapEntry(key, value.toString()))
+    });
+    return newUri.toString();
+  }
+
+  /// 웹 환경에서 API 호출을 위한 헬퍼 메서드
+  Future<Response> _makeApiCall(Map<String, dynamic> queryParameters) async {
+    if (kIsWeb) {
+      // 웹 환경: 프록시를 통해 호출하고 쿼리 파라미터를 URL에 포함
+      final fullUrl = _buildUrlWithParams('$_baseUrl$_endpoint', queryParameters);
+      final proxiedUrl = WebUtils.getApiUrl(fullUrl);
+      
+      _logger.d('🔍 프록시 URL: $proxiedUrl');
+      
+      return await _dio.get(
+        proxiedUrl,
+        options: Options(
+          headers: {}, // 웹에서는 헤더 제거
+        ),
+      );
+    } else {
+      // 모바일 환경: 일반적인 호출
+      _logger.d('🔍 요청 URL: $_baseUrl$_endpoint');
+      _logger.d('🔍 요청 파라미터: $queryParameters');
+      
+      return await _dio.get(
+        _endpoint,
+        queryParameters: queryParameters,
+      );
+    }
+  }
+
   /// 시도 목록 조회 (최상위 지역)
   Future<List<StandardRegion>> getSidoList() async {
     _logger.i('📍 시도 목록 조회 요청');
@@ -72,18 +110,13 @@ class StandardRegionService {
         'sgg_cd': '000', // 시군구 코드가 000인 것들 (시도만)
       };
 
-      // 요청 정보 로깅
-      _logger.d('🔍 요청 URL: ${_dio.options.baseUrl}$_endpoint');
-      _logger.d('🔍 요청 파라미터: $queryParameters');
-      _logger.d('🔍 헤더: ${_dio.options.headers}');
-
-      final response = await _dio.get(
-        _endpoint,
-        queryParameters: queryParameters,
-      );
+      // API 호출 (웹/모바일 환경에 따라 다른 방식 사용)
+      final response = await _makeApiCall(queryParameters);
 
       _logger.d('✅ API 응답 수신: ${response.statusCode}');
-      _logger.d('📊 응답 헤더: ${response.headers}');
+      if (!kIsWeb) {
+        _logger.d('📊 응답 헤더: ${response.headers}');
+      }
 
       if (response.statusCode == 200) {
         final responseData = response.data as String;
@@ -214,18 +247,13 @@ class StandardRegionService {
         'umd_cd': '000', // 읍면동 코드가 000인 것들 (시군구까지만)
       };
 
-      // 요청 정보 로깅
-      _logger.d('🔍 요청 URL: ${_dio.options.baseUrl}$_endpoint');
-      _logger.d('🔍 요청 파라미터: $queryParameters');
-      _logger.d('🔍 헤더: ${_dio.options.headers}');
-
-      final response = await _dio.get(
-        _endpoint,
-        queryParameters: queryParameters,
-      );
+      // API 호출 (웹/모바일 환경에 따라 다른 방식 사용)
+      final response = await _makeApiCall(queryParameters);
 
       _logger.d('✅ API 응답 수신: ${response.statusCode}');
-      _logger.d('📊 응답 헤더: ${response.headers}');
+      if (!kIsWeb) {
+        _logger.d('📊 응답 헤더: ${response.headers}');
+      }
 
       if (response.statusCode == 200) {
         final responseData = response.data as String;
