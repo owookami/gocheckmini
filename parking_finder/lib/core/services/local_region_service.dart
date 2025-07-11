@@ -74,13 +74,18 @@ class LocalRegionService {
           _logger.d('🔍 시도 체크: ${region.name} (${region.code}) - 길이:$isCorrectLength, 000끝:$endsWith000');
           return isCorrectLength && endsWith000;
         })
-        .map((region) => StandardRegion(
-          regionCd: region.code,
-          sidoCd: region.code.substring(0, 2),
-          sggCd: '000',
-          umdCd: '000',
-          locataddNm: region.name,
-        ))
+        .map((region) {
+          final standardRegion = StandardRegion(
+            regionCd: region.code,
+            sidoCd: region.code.substring(0, 2),
+            sggCd: '000',
+            umdCd: '000',
+            locataddNm: region.name,
+          );
+          _logger.d('📋 시도 생성: ${region.name} - regionCd: ${standardRegion.regionCd}, sidoCd: ${standardRegion.sidoCd}');
+          if (kIsWeb) print('📋 [WEB] 시도 생성: ${region.name} - regionCd: ${standardRegion.regionCd}, sidoCd: ${standardRegion.sidoCd}');
+          return standardRegion;
+        })
         .toList();
     
     // 서울을 맨 앞으로, 나머지는 가나다순 정렬

@@ -558,7 +558,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   selectedSido = region;
                 });
                 if (region?.regionCd != null) {
-                  _loadSigunguList(region!.regionCd!);
+                  _logger.d('📋 선택된 시도: ${region!.locataddNm} - regionCd: ${region.regionCd}, sidoCd: ${region.sidoCd}');
+                  print('📋 [WEB] 선택된 시도: ${region.locataddNm} - regionCd: ${region.regionCd}, sidoCd: ${region.sidoCd}');
+                  _loadSigunguList(region.regionCd!);
                 }
               },
               itemLabel: (region) => region.displayName,
