@@ -28,7 +28,7 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.24.0'  # 최신 버전으로 업그레이드
+        flutter-version: '3.32.6'  # GitHub Actions에서 제안한 버전
         channel: 'stable'
         cache: true
         
