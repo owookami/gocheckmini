@@ -68,21 +68,55 @@ class StandardRegionService {
     return newUri.toString();
   }
 
-  /// 웹 환경에서 API 호출을 위한 헬퍼 메서드
+  /// 웹 환경에서 API 호출을 위한 헬퍼 메서드 (프록시 실패 시 재시도)
   Future<Response> _makeApiCall(Map<String, dynamic> queryParameters) async {
     if (kIsWeb) {
-      // 웹 환경: 프록시를 통해 호출하고 쿼리 파라미터를 URL에 포함
+      // 웹 환경: 프록시를 통해 호출
       final fullUrl = _buildUrlWithParams('$_baseUrl$_endpoint', queryParameters);
-      final proxiedUrl = WebUtils.getApiUrl(fullUrl);
       
-      _logger.d('🔍 프록시 URL: $proxiedUrl');
+      // 최대 3번 시도 (다른 프록시 사용)
+      for (int attempt = 0; attempt < 3; attempt++) {
+        try {
+          final proxiedUrl = attempt == 0 
+              ? WebUtils.getApiUrl(fullUrl)
+              : WebUtils.getNextProxyUrl(fullUrl);
+          
+          _logger.d('🔍 프록시 시도 ${attempt + 1}: $proxiedUrl');
+          
+          final response = await _dio.get(
+            proxiedUrl,
+            options: Options(
+              headers: {}, // 웹에서는 헤더 제거
+              sendTimeout: Duration(seconds: 10),
+              receiveTimeout: Duration(seconds: 10),
+            ),
+          );
+          
+          // allorigins.win/get 사용 시 JSON 래핑 처리
+          if (proxiedUrl.contains('allorigins.win/get')) {
+            final jsonData = response.data;
+            if (jsonData is Map && jsonData.containsKey('contents')) {
+              // contents 필드에서 실제 응답 데이터 추출
+              response.data = jsonData['contents'];
+            }
+          }
+          
+          _logger.i('✅ 프록시 성공 (시도 ${attempt + 1})');
+          return response;
+          
+        } catch (e) {
+          _logger.w('⚠️ 프록시 시도 ${attempt + 1} 실패: $e');
+          if (attempt == 2) {
+            // 모든 프록시 실패 시 원본 URL로 시도 (CORS 에러 발생할 수 있음)
+            _logger.e('❌ 모든 프록시 실패, 원본 URL로 시도');
+            rethrow;
+          }
+        }
+      }
       
-      return await _dio.get(
-        proxiedUrl,
-        options: Options(
-          headers: {}, // 웹에서는 헤더 제거
-        ),
-      );
+      // 여기까지 오면 안 됨
+      throw Exception('모든 프록시 서비스 사용 불가');
+      
     } else {
       // 모바일 환경: 일반적인 호출
       _logger.d('🔍 요청 URL: $_baseUrl$_endpoint');
