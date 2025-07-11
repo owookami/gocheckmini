@@ -1,0 +1,14 @@
+{
+  "name": "parking-finder-proxy",
+  "version": "1.0.0",
+  "description": "Vercel Functions for CORS proxy",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@vercel/node": "^3.0.0"
+  }
+}

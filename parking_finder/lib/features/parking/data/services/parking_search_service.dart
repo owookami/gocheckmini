@@ -53,40 +53,60 @@ class ParkingSearchService {
       
       _logger.d('🔍 웹 환경 - 프록시 사용: $fullUrl');
       
-      // allorigins.win 프록시 사용
-      final proxiedUrl = WebUtils.getApiUrl(fullUrl);
-      _logger.d('🔗 프록시 URL: $proxiedUrl');
-      
-      final response = await _client
-          .get(
-            Uri.parse(proxiedUrl),
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json; charset=utf-8',
-            },
-          )
-          .timeout(const Duration(seconds: 30));
-      
-      _logger.i('📨 프록시 응답 상태 코드: ${response.statusCode}');
-      
-      // allorigins.win 응답 처리
-      if (response.statusCode == 200 && proxiedUrl.contains('allorigins.win')) {
+      // 여러 프록시 시도 (최대 3번)
+      for (int attempt = 0; attempt < 3; attempt++) {
         try {
-          final jsonData = json.decode(response.body);
-          if (jsonData is Map && jsonData.containsKey('contents')) {
-            // contents 필드에서 실제 응답 데이터 추출
-            final contentsData = jsonData['contents'];
-            if (contentsData is String) {
-              // contents가 문자열인 경우 새로운 Response 객체 생성
-              return http.Response(contentsData, response.statusCode, headers: response.headers);
+          final proxiedUrl = attempt == 0 
+              ? WebUtils.getApiUrl(fullUrl)
+              : WebUtils.getNextProxyUrl(fullUrl);
+          
+          _logger.d('🔗 프록시 시도 ${attempt + 1}: $proxiedUrl');
+          
+          final response = await _client
+              .get(
+                Uri.parse(proxiedUrl),
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json; charset=utf-8',
+                },
+              )
+              .timeout(const Duration(seconds: 15)); // 타임아웃 단축
+          
+          _logger.i('📨 프록시 응답 상태 코드: ${response.statusCode}');
+          
+          if (response.statusCode == 200) {
+            // allorigins.win 응답 처리
+            if (proxiedUrl.contains('allorigins.win')) {
+              try {
+                final jsonData = json.decode(response.body);
+                if (jsonData is Map && jsonData.containsKey('contents')) {
+                  final contentsData = jsonData['contents'];
+                  if (contentsData is String) {
+                    _logger.i('✅ allorigins.win 프록시 성공 (시도 ${attempt + 1})');
+                    return http.Response(contentsData, response.statusCode, headers: response.headers);
+                  }
+                }
+              } catch (e) {
+                _logger.w('⚠️ allorigins 응답 처리 중 오류: $e');
+                continue; // 다음 프록시 시도
+              }
+            } else {
+              // 다른 프록시들은 직접 응답 반환
+              _logger.i('✅ 프록시 성공 (시도 ${attempt + 1})');
+              return response;
             }
           }
+          
         } catch (e) {
-          _logger.w('⚠️ allorigins 응답 처리 중 오류: $e');
+          _logger.w('⚠️ 프록시 시도 ${attempt + 1} 실패: $e');
+          if (attempt == 2) {
+            _logger.e('❌ 모든 프록시 실패');
+            rethrow;
+          }
         }
       }
       
-      return response;
+      throw Exception('모든 프록시 서비스 사용 불가');
     } else {
       // 모바일 환경: 직접 API 호출
       final uri = Uri.parse('$_baseUrl$endpoint').replace(

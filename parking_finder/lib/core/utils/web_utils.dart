@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 class WebUtils {
   // 사용 가능한 CORS 프록시 서비스들
   static const List<String> _corsProxies = [
-    'https://cors-proxy.fringe.zone/',
     'https://api.allorigins.win/get?url=',
+    'https://cors-anywhere.herokuapp.com/',
+    'https://proxy.cors.sh/',
+    'https://cors.proxy.qwdqwdq.com/',
     'https://thingproxy.freeboard.io/fetch/',
   ];
   
@@ -24,11 +26,11 @@ class WebUtils {
     if (proxy.contains('allorigins.win/get')) {
       // allorigins.win의 get 엔드포인트는 JSON으로 래핑됨
       proxiedUrl = proxy + Uri.encodeComponent(originalUrl);
-    } else if (proxy.contains('fringe.zone')) {
-      // fringe.zone은 단순히 URL 뒤에 붙임
+    } else if (proxy.contains('cors.sh')) {
+      // cors.sh는 특별한 형태
       proxiedUrl = proxy + originalUrl;
     } else {
-      // 기타 프록시들
+      // 기타 프록시들 (cors-anywhere, thingproxy 등)
       proxiedUrl = proxy + originalUrl;
     }
     
