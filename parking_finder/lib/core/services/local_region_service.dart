@@ -124,11 +124,10 @@ class LocalRegionService {
           final startsWithSido = region.code.startsWith(sidoPrefix);
           final notEndsWith000 = !region.code.endsWith('000');
           final isDistrict = region.name.contains('구') || region.name.contains('군');
-          final notMainCity = !region.name.contains('특별시') && !region.name.contains('광역시');
           
-          _logger.d('🔍 지역 체크: ${region.name} (${region.code}) - 길이:$isCorrectLength, 시도:$startsWithSido, 비000:$notEndsWith000, 구군:$isDistrict, 비시도:$notMainCity');
+          _logger.d('🔍 지역 체크: ${region.name} (${region.code}) - 길이:$isCorrectLength, 시도:$startsWithSido, 비000:$notEndsWith000, 구군:$isDistrict');
           
-          return isCorrectLength && startsWithSido && notEndsWith000 && isDistrict && notMainCity;
+          return isCorrectLength && startsWithSido && notEndsWith000 && isDistrict;
         })
         .map((region) => StandardRegion(
           regionCd: region.code,
