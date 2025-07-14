@@ -21,21 +21,29 @@ jobs:
         channel: 'stable'
         
     - name: Install dependencies
-      run: flutter pub get
+      run: |
+        cd parking_finder
+        flutter pub get
       
     - name: Analyze code
-      run: flutter analyze
+      run: |
+        cd parking_finder
+        flutter analyze
       
     - name: Run tests
-      run: flutter test
+      run: |
+        cd parking_finder
+        flutter test
       
     - name: Build web
-      run: flutter build web --release --no-tree-shake-icons --base-href /parking_finder/
+      run: |
+        cd parking_finder
+        flutter build web --release --no-tree-shake-icons --base-href /gocheckmini/
       
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./build/web
+        publish_dir: ./parking_finder/build/web
         cname: # Add your custom domain if you have one
