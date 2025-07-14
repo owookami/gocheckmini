@@ -6,6 +6,7 @@ import '../../data/models/parking_lot_model.dart';
 import '../../data/services/favorites_service.dart';
 import '../../data/services/parking_search_service.dart';
 import 'google_street_view_screen.dart';
+import '../services/web_street_view_service.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -318,22 +319,28 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       }
 
       // 스트리트 뷰 화면으로 이동
-      if (context.mounted && location != null) {
-        final safeLocation = location;
-        
-        // 웹에서는 바로 새 탭에서 Google Maps 스트리트 뷰 열기
+      if (context.mounted) {
+        // 웹에서는 새로운 WebStreetViewService 사용
         if (kIsWeb) {
-          final lat = safeLocation.latitude;
-          final lng = safeLocation.longitude;
-          final streetViewUrl = 'https://www.google.com/maps/@$lat,$lng,3a,75y,90t/data=!3m4!1e1!3m2!1s$lat,$lng!2e0';
-          
-          launchUrl(
-            Uri.parse(streetViewUrl),
-            webOnlyWindowName: '_blank',
-            mode: LaunchMode.platformDefault,
+          final success = await WebStreetViewService.openStreetViewForParkingLot(
+            parkingLotName: parkingLot.name ?? '주차장',
+            address: parkingLot.address,
+            latitude: location?.latitude,
+            longitude: location?.longitude,
           );
-        } else {
-          // 모바일에서는 기존대로 GoogleStreetViewScreen 사용
+          
+          if (!success && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('스트리트 뷰를 열 수 없습니다. 브라우저 설정을 확인해주세요.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        } 
+        // 모바일에서는 기존대로 GoogleStreetViewScreen 사용 (location이 있을 때만)
+        else if (location != null) {
+          final safeLocation = location;
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => GoogleStreetViewScreen(
@@ -343,16 +350,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             ),
           );
-        }
-      } else {
-        // 위치 정보가 없는 경우 에러 메시지 표시
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('위치 정보를 찾을 수 없어 스트리트뷰를 표시할 수 없습니다.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+        } else {
+          // 모바일에서 위치 정보가 없는 경우 에러 메시지 표시
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('위치 정보를 찾을 수 없어 스트리트뷰를 표시할 수 없습니다.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
