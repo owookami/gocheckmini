@@ -61,15 +61,16 @@ class _GoogleMapScreenState extends State<GoogleMapScreen>
       if (widget.parkingLot.latitude != null &&
           widget.parkingLot.longitude != null) {
         // 이미 좌표가 있는 경우
-        setState(() {
-          _parkingLocation = LatLng(
-            widget.parkingLot.latitude!,
-            widget.parkingLot.longitude!,
-          );
-          _isLoading = false;
-        });
-        _addMarker();
-        return;
+        final lat = widget.parkingLot.latitude;
+        final lng = widget.parkingLot.longitude;
+        if (lat != null && lng != null) {
+          setState(() {
+            _parkingLocation = LatLng(lat, lng);
+            _isLoading = false;
+          });
+          _addMarker();
+          return;
+        }
       }
 
       // 주소로부터 좌표 검색
@@ -103,11 +104,12 @@ class _GoogleMapScreenState extends State<GoogleMapScreen>
 
   /// 마커 추가
   void _addMarker() {
-    if (_parkingLocation == null) return;
+    final location = _parkingLocation;
+    if (location == null) return;
 
     final marker = Marker(
       markerId: MarkerId('parking_marker'),
-      position: _parkingLocation!,
+      position: location,
       infoWindow: InfoWindow(
         title: widget.parkingLot.name ?? '주차장',
         snippet: widget.parkingLot.address,
@@ -128,10 +130,11 @@ class _GoogleMapScreenState extends State<GoogleMapScreen>
 
   /// 구글 지도 앱에서 열기
   Future<void> _openInGoogleMaps() async {
-    if (_parkingLocation == null) return;
+    final location = _parkingLocation;
+    if (location == null) return;
 
-    final lat = _parkingLocation!.latitude;
-    final lng = _parkingLocation!.longitude;
+    final lat = location.latitude;
+    final lng = location.longitude;
     final name = Uri.encodeComponent(widget.parkingLot.name ?? '주차장');
 
     // 구글 지도 URL
@@ -253,10 +256,15 @@ class _GoogleMapScreenState extends State<GoogleMapScreen>
   }
 
   Widget _buildMapView() {
+    final location = _parkingLocation;
+    if (location == null) {
+      return const Center(child: Text('위치 정보를 불러올 수 없습니다'));
+    }
+    
     return GoogleMap(
       onMapCreated: _onMapCreated,
       initialCameraPosition: CameraPosition(
-        target: _parkingLocation!,
+        target: location,
         zoom: 16.0,
       ),
       markers: _markers,
@@ -267,10 +275,15 @@ class _GoogleMapScreenState extends State<GoogleMapScreen>
   }
 
   Widget _buildStreetView() {
+    final location = _parkingLocation;
+    if (location == null) {
+      return const Center(child: Text('위치 정보를 불러올 수 없습니다'));
+    }
+    
     return GoogleStreetViewScreen(
       parkingLot: widget.parkingLot,
-      latitude: _parkingLocation!.latitude,
-      longitude: _parkingLocation!.longitude,
+      latitude: location.latitude,
+      longitude: location.longitude,
     );
   }
 }

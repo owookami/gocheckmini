@@ -7,8 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 /// 구글 스트리트 뷰 화면
 class GoogleStreetViewScreen extends StatefulWidget {
   final ParkingLotModel parkingLot;
-  final double latitude;
-  final double longitude;
+  final double? latitude;
+  final double? longitude;
 
   const GoogleStreetViewScreen({
     Key? key,
@@ -37,6 +37,15 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
     final lat = widget.latitude;
     final lng = widget.longitude;
     final name = widget.parkingLot.name ?? '주차장';
+
+    // 좌표 유효성 체크
+    if (lat == null || lng == null) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = '유효하지 않은 좌표입니다';
+      });
+      return;
+    }
 
     // iframe을 포함한 HTML 페이지 생성
     final htmlContent = _generateStreetViewHtml(lat, lng, name);
@@ -278,6 +287,15 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
   Future<void> _openInExternalBrowser() async {
     final lat = widget.latitude;
     final lng = widget.longitude;
+
+    if (lat == null || lng == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('좌표 정보가 없어 외부 브라우저를 열 수 없습니다')),
+        );
+      }
+      return;
+    }
 
     // 구글 지도 스트리트 뷰 URL
     final streetViewUrl =

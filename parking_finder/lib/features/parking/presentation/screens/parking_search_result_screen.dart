@@ -253,9 +253,9 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
     if (widget.searchType == ParkingSearchType.structure) {
       // 공작물관리대장의 경우 공작물 코드명과 면적 표시
       final facilityInfo = item.facilityInfo ?? '공작물 정보 없음';
-      final area =
-          item.area != null && item.area! > 0
-              ? '면적: ${item.area!.toStringAsFixed(1)}㎡'
+      final areaValue = item.area;
+      final area = (areaValue != null && areaValue > 0)
+              ? '면적: ${areaValue.toStringAsFixed(1)}㎡'
               : '면적: 정보없음';
       return '$facilityInfo · $area';
     } else if (widget.searchType == ParkingSearchType.general) {
@@ -281,7 +281,7 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
                       '주소:',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    Text(item.address!),
+                    Text(item.address ?? ''),
                     const SizedBox(height: 12),
                   ],
                   if (widget.searchType == ParkingSearchType.structure) ...[
@@ -291,17 +291,23 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
                         '공작물 정보:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      Text(item.facilityInfo!),
+                      Text(item.facilityInfo ?? ''),
                       const SizedBox(height: 8),
                     ],
-                    if (item.area != null && item.area! > 0) ...[
-                      const Text(
-                        '면적:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text('${item.area!.toStringAsFixed(1)}㎡'),
-                      const SizedBox(height: 8),
-                    ],
+                    ...() {
+                      final areaValue = item.area;
+                      if (areaValue != null && areaValue > 0) {
+                        return [
+                          const Text(
+                            '면적:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text('${areaValue.toStringAsFixed(1)}㎡'),
+                          const SizedBox(height: 8),
+                        ];
+                      }
+                      return <Widget>[];
+                    }(),
                     const Text(
                       '구분:',
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -342,7 +348,7 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
                         '요금정보:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      Text(item.feeInfo!),
+                      Text(item.feeInfo ?? ''),
                       const SizedBox(height: 8),
                     ],
                     if (item.phoneNumber != null) ...[
@@ -350,7 +356,7 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
                         '연락처:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      Text(item.phoneNumber!),
+                      Text(item.phoneNumber ?? ''),
                       const SizedBox(height: 8),
                     ],
                   ],
@@ -359,7 +365,7 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
                       '관리기관:',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    Text(item.managementAgency!),
+                    Text(item.managementAgency ?? ''),
                   ],
                 ],
               ),
@@ -439,7 +445,11 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
 
       // 이미 좌표가 있는 경우
       if (parkingLot.latitude != null && parkingLot.longitude != null) {
-        location = LatLng(parkingLot.latitude!, parkingLot.longitude!);
+        final lat = parkingLot.latitude;
+        final lng = parkingLot.longitude;
+        if (lat != null && lng != null) {
+          location = LatLng(lat, lng);
+        }
       } else {
         // 주소로부터 좌표 검색
         final address = parkingLot.address;
@@ -463,15 +473,12 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
 
       // 스트리트 뷰 화면으로 이동
       if (context.mounted && location != null) {
-        final lat = location.latitude;
-        final lng = location.longitude;
-        
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => GoogleStreetViewScreen(
               parkingLot: parkingLot,
-              latitude: lat,
-              longitude: lng,
+              latitude: location!.latitude,
+              longitude: location!.longitude,
             ),
           ),
         );

@@ -71,7 +71,7 @@ class _NaverMapScreenState extends State<NaverMapScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.parkingLot.address!,
+                      widget.parkingLot.address ?? '',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
@@ -132,7 +132,7 @@ class _NaverMapScreenState extends State<NaverMapScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.parkingLot.address!,
+                      widget.parkingLot.address ?? '',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
@@ -149,7 +149,7 @@ class _NaverMapScreenState extends State<NaverMapScreen> {
     if (widget.parkingLot.address == null) return;
 
     try {
-      final address = Uri.encodeComponent(widget.parkingLot.address!);
+      final address = Uri.encodeComponent(widget.parkingLot.address ?? '');
       final googleMapsUrl = 'https://maps.google.com/?q=$address';
       
       final uri = Uri.parse(googleMapsUrl);

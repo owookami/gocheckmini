@@ -249,9 +249,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
     if (item.facilityInfo != null) {
       // 공작물관리대장의 경우
-      final area =
-          item.area != null && item.area! > 0
-              ? '면적: ${item.area!.toStringAsFixed(1)}㎡'
+      final areaValue = item.area;
+      final area = (areaValue != null && areaValue > 0)
+              ? '면적: ${areaValue.toStringAsFixed(1)}㎡'
               : '면적: 정보없음';
       return '${item.facilityInfo} · $area';
     } else {
@@ -289,9 +289,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
       // 이미 좌표가 있는 경우
       if (parkingLot.latitude != null && parkingLot.longitude != null) {
-        final lat = parkingLot.latitude!;
-        final lng = parkingLot.longitude!;
-        location = LatLng(lat, lng);
+        final lat = parkingLot.latitude;
+        final lng = parkingLot.longitude;
+        if (lat != null && lng != null) {
+          location = LatLng(lat, lng);
+        }
       } else {
         // 주소로부터 좌표 검색
         final address = parkingLot.address;
@@ -315,15 +317,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
       // 스트리트 뷰 화면으로 이동
       if (context.mounted && location != null) {
-        final lat = location.latitude;
-        final lng = location.longitude;
-        
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => GoogleStreetViewScreen(
               parkingLot: parkingLot,
-              latitude: lat,
-              longitude: lng,
+              latitude: location!.latitude,
+              longitude: location!.longitude,
             ),
           ),
         );
