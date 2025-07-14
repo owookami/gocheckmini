@@ -1057,9 +1057,13 @@ class _$StandardRegionResponseBodyCopyWithImpl<
       return null;
     }
 
-    return $StandardRegionItemsCopyWith<$Res>(_value.items!, (value) {
-      return _then(_value.copyWith(items: value) as $Val);
-    });
+    final items = _value.items;
+    if (items != null) {
+      return $StandardRegionItemsCopyWith<$Res>(items, (value) {
+        return _then(_value.copyWith(items: value) as $Val);
+      });
+    }
+    return null;
   }
 }
 
