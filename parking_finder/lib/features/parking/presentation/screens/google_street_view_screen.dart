@@ -3,6 +3,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:logger/logger.dart';
 import '../../data/models/parking_lot_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart';
 
 /// 구글 스트리트 뷰 화면
 class GoogleStreetViewScreen extends StatefulWidget {
@@ -30,7 +31,15 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeWebView();
+    // 웹 환경에서는 바로 외부 브라우저로 리다이렉트
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openInExternalBrowser();
+        Navigator.of(context).pop();
+      });
+    } else {
+      _initializeWebView();
+    }
   }
 
   void _initializeWebView() async {
@@ -228,6 +237,27 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 웹 환경에서는 로딩 화면만 표시
+    if (kIsWeb) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              const Text('스트리트 뷰를 여는 중...'),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('돌아가기'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -372,7 +402,18 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
 
     try {
       final uri = Uri.parse(streetViewUrl);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      
+      // 웹에서는 새 탭에서 열기
+      if (kIsWeb) {
+        await launchUrl(
+          uri, 
+          webOnlyWindowName: '_blank',
+          mode: LaunchMode.platformDefault,
+        );
+      } else {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      
       _logger.d('외부 브라우저에서 스트리트 뷰 열기 성공: $streetViewUrl');
     } catch (e) {
       _logger.e('외부 브라우저에서 스트리트 뷰 열기 실패: $e');
