@@ -11,7 +11,11 @@ class FavoritesService {
   static FavoritesService? _instance;
   static FavoritesService get instance {
     _instance ??= FavoritesService._internal();
-    return _instance!;
+    final currentInstance = _instance;
+    if (currentInstance != null) {
+      return currentInstance;
+    }
+    throw StateError('FavoritesService initialization failed');
   }
 
   FavoritesService._internal();

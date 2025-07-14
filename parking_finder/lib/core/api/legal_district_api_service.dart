@@ -170,8 +170,9 @@ class LegalDistrictApiService {
       }
     } on DioException catch (e) {
       _logger.e('❌ API 호출 실패 (페이지 $pageNo)', error: e);
-      if (e.response != null) {
-        _logger.e('응답 데이터: ${e.response!.data}');
+      final errorResponse = e.response;
+      if (errorResponse != null) {
+        _logger.e('응답 데이터: ${errorResponse.data}');
       }
       rethrow;
     } catch (e) {

@@ -187,9 +187,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       String sigunguCode;
       String bjdongCode;
 
-      if (selectedSigungu != null) {
+      final safeSelectedSigungu = selectedSigungu;
+      if (safeSelectedSigungu != null) {
         // sigunguCd 변환: 11000500 → 11500 (앞2자리 + 끝3자리)
-        final safeSelectedSigungu = selectedSigungu;
         final sidoCode = selectedSido?.apiRegionCode ?? '';
         final sggCode = safeSelectedSigungu.sggCd ?? '';
         final originalSigunguCode = sidoCode + sggCode;
@@ -204,9 +204,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         sigunguCode = selectedSido?.apiRegionCode ?? '';
       }
 
-      if (selectedUmd != null) {
+      final safeSelectedUmd = selectedUmd;
+      if (safeSelectedUmd != null) {
         // bjdongCd 변환: 103 → 10300 (뒤에 00 붙여서 5자리)
-        final safeSelectedUmd = selectedUmd;
         final originalBjdongCode = safeSelectedUmd.bjdongCode ?? '';
         bjdongCode = originalBjdongCode.padRight(5, '0');
       } else {
@@ -539,12 +539,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 setState(() {
                   selectedSigungu = region;
                 });
-                if (region != null && selectedSido != null) {
+                if (region != null) {
                   final safeSido = selectedSido;
-                  final sggCd = region.sggCd;
-                  final sidoCd = safeSido.sidoCd;
-                  if (sggCd != null && sidoCd != null) {
-                    _loadUmdList(sidoCd, sggCd);
+                  if (safeSido != null) {
+                    final sggCd = region.sggCd;
+                    final sidoCd = safeSido.sidoCd;
+                    if (sggCd != null && sidoCd != null) {
+                      _loadUmdList(sidoCd, sggCd);
+                    }
                   }
                 }
               },

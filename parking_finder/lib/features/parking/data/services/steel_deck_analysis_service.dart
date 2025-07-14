@@ -78,8 +78,9 @@ class SteelDeckAnalysisService {
     double buildingUseScore = 0.0;
 
     // 1. 건축년도 점수 (최대 0.3점)
-    if (buildingInfo.buildYear != null) {
-      final year = buildingInfo.buildYear!;
+    final buildYear = buildingInfo.buildYear;
+    if (buildYear != null) {
+      final year = buildYear;
       if (year >= 2010) {
         buildYearScore = 0.3; // 2010년 이후: 매우 높음
       } else if (year >= 2000) {
@@ -108,8 +109,9 @@ class SteelDeckAnalysisService {
     }
 
     // 3. 면적 점수 (최대 0.2점)
-    if (buildingInfo.totalArea != null) {
-      final area = buildingInfo.totalArea!;
+    final totalArea = buildingInfo.totalArea;
+    if (totalArea != null) {
+      final area = totalArea;
       if (area >= 3000) {
         areaScore = 0.2; // 3000㎡ 이상: 매우 적합
       } else if (area >= 1500) {
@@ -122,8 +124,9 @@ class SteelDeckAnalysisService {
     }
 
     // 4. 구조형식 점수 (최대 0.1점)
-    if (buildingInfo.structureType != null) {
-      final structure = buildingInfo.structureType!.toLowerCase();
+    final structureType = buildingInfo.structureType;
+    if (structureType != null) {
+      final structure = structureType.toLowerCase();
       if (structure.contains('철골') || structure.contains('steel')) {
         structureTypeScore = 0.1; // 이미 철골구조: 매우 적합
       } else if (structure.contains('철근콘크리트') || structure.contains('rc')) {
@@ -136,8 +139,9 @@ class SteelDeckAnalysisService {
     }
 
     // 5. 건축물 용도 점수 (최대 0.1점)
-    if (buildingInfo.buildingUse != null) {
-      final use = buildingInfo.buildingUse!.toLowerCase();
+    final buildingUse = buildingInfo.buildingUse;
+    if (buildingUse != null) {
+      final use = buildingUse.toLowerCase();
       if (use.contains('주차장') || use.contains('차고')) {
         buildingUseScore = 0.1; // 주차장: 매우 적합
       } else if (use.contains('창고') ||
@@ -275,7 +279,8 @@ class SteelDeckAnalysisService {
       risks.add('주거용 건물로 소음 및 진동 문제 발생 가능');
     }
 
-    if (buildingInfo.buildYear != null && buildingInfo.buildYear! < 1980) {
+    final buildYear = buildingInfo.buildYear;
+    if (buildYear != null && buildYear < 1980) {
       risks.add('노후 건축물로 내진 설계 기준 미달 가능성');
     }
 

@@ -274,8 +274,8 @@ class BuildingInfoService {
         if (th.text.trim().contains(labelText)) {
           // 다음 td 요소의 값 추출
           final nextTd = th.nextElementSibling;
-          if (nextTd?.localName == 'td') {
-            return nextTd!.text.trim();
+          if (nextTd != null && nextTd.localName == 'td') {
+            return nextTd.text.trim();
           }
           // 같은 행의 td 찾기
           final row = th.parent;

@@ -288,19 +288,25 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
     return Stack(
       children: [
         // WebView
-        if (_controller != null)
-          WebViewWidget(controller: _controller!)
-        else if (_errorMessage == null)
-          const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(color: Color(0xFF4285F4)),
-                SizedBox(height: 16),
-                Text('WebView 초기화 중...'),
-              ],
-            ),
-          )
+        () {
+          final controller = _controller;
+          if (controller != null) {
+            return WebViewWidget(controller: controller);
+          } else if (_errorMessage == null) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF4285F4)),
+                  SizedBox(height: 16),
+                  Text('WebView 초기화 중...'),
+                ],
+              ),
+            );
+          } else {
+            return const SizedBox.expand();
+          }
+        }(),
 
         // 로딩 인디케이터
         if (_isLoading)
