@@ -478,6 +478,12 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
       if (context.mounted) {
         // 웹에서는 새로운 WebStreetViewService 사용
         if (kIsWeb) {
+          print('🔍 스트리트 뷰 호출 시작 - parking_search_result_screen');
+          print('📋 주차장 정보:');
+          print('  - 이름: ${parkingLot.name}');
+          print('  - 주소: ${parkingLot.address}');
+          print('  - 위치: ${location?.latitude}, ${location?.longitude}');
+          
           final success = await WebStreetViewService.openStreetViewForParkingLot(
             parkingLotName: parkingLot.name ?? '주차장',
             address: parkingLot.address,
@@ -485,13 +491,18 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
             longitude: location?.longitude,
           );
           
+          print('📋 WebStreetViewService 결과: $success');
+          
           if (!success && context.mounted) {
+            print('❌ 스트리트 뷰 실패 - 토스트 메시지 표시');
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('스트리트 뷰를 열 수 없습니다. 브라우저 설정을 확인해주세요.'),
                 backgroundColor: Colors.orange,
               ),
             );
+          } else {
+            print('✅ 스트리트 뷰 성공 또는 컨텍스트 없음');
           }
         } 
         // 모바일에서는 기존대로 GoogleStreetViewScreen 사용 (location이 있을 때만)
