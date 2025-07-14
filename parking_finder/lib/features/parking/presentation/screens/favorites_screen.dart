@@ -289,7 +289,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
       // 이미 좌표가 있는 경우
       if (parkingLot.latitude != null && parkingLot.longitude != null) {
-        location = LatLng(parkingLot.latitude!, parkingLot.longitude!);
+        final lat = parkingLot.latitude!;
+        final lng = parkingLot.longitude!;
+        location = LatLng(lat, lng);
       } else {
         // 주소로부터 좌표 검색
         final address = parkingLot.address;

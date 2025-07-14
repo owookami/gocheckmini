@@ -23,7 +23,7 @@ class GoogleStreetViewScreen extends StatefulWidget {
 
 class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
   final Logger _logger = Logger();
-  late final WebViewController _controller;
+  WebViewController? _controller;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -202,7 +202,12 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
     return Stack(
       children: [
         // WebView
-        WebViewWidget(controller: _controller),
+        if (_controller != null)
+          WebViewWidget(controller: _controller!)
+        else
+          const Center(
+            child: CircularProgressIndicator(color: Color(0xFF4285F4)),
+          ),
 
         // 로딩 인디케이터
         if (_isLoading)
