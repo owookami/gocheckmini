@@ -189,8 +189,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
       if (selectedSigungu != null) {
         // sigunguCd 변환: 11000500 → 11500 (앞2자리 + 끝3자리)
-        final originalSigunguCode =
-            selectedSido!.apiRegionCode + selectedSigungu!.sggCd!;
+        final safeSelectedSigungu = selectedSigungu;
+        final sidoCode = selectedSido?.apiRegionCode ?? '';
+        final sggCode = safeSelectedSigungu.sggCd ?? '';
+        final originalSigunguCode = sidoCode + sggCode;
         if (originalSigunguCode.length >= 5) {
           sigunguCode =
               originalSigunguCode.substring(0, 2) +
@@ -199,12 +201,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           sigunguCode = originalSigunguCode;
         }
       } else {
-        sigunguCode = selectedSido!.apiRegionCode;
+        sigunguCode = selectedSido?.apiRegionCode ?? '';
       }
 
       if (selectedUmd != null) {
         // bjdongCd 변환: 103 → 10300 (뒤에 00 붙여서 5자리)
-        final originalBjdongCode = selectedUmd!.bjdongCode!;
+        final safeSelectedUmd = selectedUmd;
+        final originalBjdongCode = safeSelectedUmd.bjdongCode ?? '';
         bjdongCode = originalBjdongCode.padRight(5, '0');
       } else {
         bjdongCode = '000';
@@ -212,10 +215,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
       _logger.i('🔍 주차장 검색 실행');
       _logger.d(
-        '📍 지역: ${selectedSido!.locataddNm} > ${selectedSigungu?.locataddNm ?? ''} > ${selectedUmd?.locataddNm ?? ''}',
+        '📍 지역: ${selectedSido?.locataddNm ?? ''} > ${selectedSigungu?.locataddNm ?? ''} > ${selectedUmd?.locataddNm ?? ''}',
       );
       _logger.d(
-        '🔢 원본 지역코드: ${selectedSido!.apiRegionCode}${selectedSigungu?.sggCd ?? ''}, 변환된 sigunguCode: $sigunguCode',
+        '🔢 원본 지역코드: ${selectedSido?.apiRegionCode ?? ''}${selectedSigungu?.sggCd ?? ''}, 변환된 sigunguCode: $sigunguCode',
       );
       _logger.d(
         '🔢 원본 법정동코드: ${selectedUmd?.bjdongCode ?? ''}, 변환된 bjdongCode: $bjdongCode',
@@ -258,9 +261,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   /// 위치 문자열 생성
   String _buildLocationString() {
     final parts = <String>[];
-    if (selectedSido != null) parts.add(selectedSido!.locataddNm ?? '');
-    if (selectedSigungu != null) parts.add(selectedSigungu!.locataddNm ?? '');
-    if (selectedUmd != null) parts.add(selectedUmd!.locataddNm ?? '');
+    final safeSido = selectedSido;
+    final safeSigungu = selectedSigungu;
+    final safeUmd = selectedUmd;
+    
+    if (safeSido != null) parts.add(safeSido.locataddNm ?? '');
+    if (safeSigungu != null) parts.add(safeSigungu.locataddNm ?? '');
+    if (safeUmd != null) parts.add(safeUmd.locataddNm ?? '');
     return parts.where((part) => part.isNotEmpty).join(' > ');
   }
 
@@ -350,7 +357,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      errorMessage!,
+                      errorMessage ?? '',
                       style: TextStyle(
                         color: Colors.red.shade700,
                         fontSize: 13,
@@ -421,7 +428,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       color:
                           selectedSearchType == type
                               ? Colors.blue
-                              : Colors.grey[300]!,
+                              : Colors.grey[300] ?? Colors.grey,
                       width: selectedSearchType == type ? 2 : 1,
                     ),
                     color:
@@ -504,8 +511,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 setState(() {
                   selectedSido = region;
                 });
-                if (region?.sidoCd != null) {
-                  _loadSigunguList(region!.sidoCd!);
+                if (region != null) {
+                  final sidoCd = region.sidoCd;
+                  if (sidoCd != null) {
+                    _loadSigunguList(sidoCd);
+                  }
                 }
               },
               itemLabel: (region) => region.displayName,
@@ -524,8 +534,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 setState(() {
                   selectedSigungu = region;
                 });
-                if (region?.sggCd != null && selectedSido?.sidoCd != null) {
-                  _loadUmdList(selectedSido!.sidoCd!, region!.sggCd!);
+                if (region != null && selectedSido != null) {
+                  final safeSido = selectedSido;
+                  final sggCd = region.sggCd;
+                  final sidoCd = safeSido.sidoCd;
+                  if (sggCd != null && sidoCd != null) {
+                    _loadUmdList(sidoCd, sggCd);
+                  }
                 }
               },
               itemLabel: (region) => region.displayName,
@@ -579,7 +594,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[300]!),
+            border: Border.all(color: Colors.grey[300] ?? Colors.grey),
           ),
           child: DropdownButtonFormField<StandardRegion>(
             value: selectedItem,

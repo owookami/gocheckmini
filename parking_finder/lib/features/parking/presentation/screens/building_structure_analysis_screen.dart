@@ -110,7 +110,7 @@ class _BuildingStructureAnalysisScreenState
 
   Widget _buildResultSection() {
     final analysisAsync = ref.watch(
-      analyzeBuildingStructureProvider(_lastSearchedAddress!),
+      analyzeBuildingStructureProvider(_lastSearchedAddress ?? ''),
     );
 
     return Expanded(
@@ -171,7 +171,7 @@ class _BuildingStructureAnalysisScreenState
             decoration: BoxDecoration(
               color: Colors.green[50],
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green[200]!),
+              border: Border.all(color: Colors.green[200] ?? Colors.green),
             ),
             child: const Column(
               children: [
@@ -213,7 +213,7 @@ class _BuildingStructureAnalysisScreenState
       decoration: BoxDecoration(
         color: Colors.red[50],
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red[200]!),
+        border: Border.all(color: Colors.red[200] ?? Colors.red),
       ),
       child: Column(
         children: [

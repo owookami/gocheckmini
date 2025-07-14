@@ -211,12 +211,16 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
     return Stack(
       children: [
         // WebView
-        if (_controller != null)
-          WebViewWidget(controller: _controller!)
-        else
-          const Center(
-            child: CircularProgressIndicator(color: Color(0xFF4285F4)),
-          ),
+        () {
+          final controller = _controller;
+          if (controller != null) {
+            return WebViewWidget(controller: controller);
+          } else {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF4285F4)),
+            );
+          }
+        }(),
 
         // 로딩 인디케이터
         if (_isLoading)
