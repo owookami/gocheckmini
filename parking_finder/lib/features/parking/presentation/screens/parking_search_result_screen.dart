@@ -463,16 +463,28 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
 
       // 스트리트 뷰 화면으로 이동
       if (context.mounted && location != null) {
+        final lat = location.latitude;
+        final lng = location.longitude;
+        
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder:
-                (context) => GoogleStreetViewScreen(
-                  parkingLot: parkingLot,
-                  latitude: location!.latitude,
-                  longitude: location!.longitude,
-                ),
+            builder: (context) => GoogleStreetViewScreen(
+              parkingLot: parkingLot,
+              latitude: lat,
+              longitude: lng,
+            ),
           ),
         );
+      } else {
+        // 위치 정보가 없는 경우 에러 메시지 표시
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('위치 정보를 찾을 수 없어 스트리트뷰를 표시할 수 없습니다.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       // 로딩 다이얼로그 닫기
