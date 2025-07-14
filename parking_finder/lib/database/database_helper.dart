@@ -13,7 +13,11 @@ class DatabaseHelper {
   /// 데이터베이스 인스턴스를 가져옵니다
   Future<Database> get database async {
     _database ??= await _initDatabase();
-    return _database!;
+    final db = _database;
+    if (db != null) {
+      return db;
+    }
+    throw Exception('데이터베이스 초기화 실패');
   }
 
   /// 데이터베이스를 초기화합니다

@@ -229,7 +229,7 @@ class _GoogleMapScreenState extends State<GoogleMapScreen>
             Text('지도 로드 실패', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
-              _errorMessage!,
+              _errorMessage ?? '',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),

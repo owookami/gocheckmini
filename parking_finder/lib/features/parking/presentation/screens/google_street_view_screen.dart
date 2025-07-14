@@ -255,7 +255,7 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _errorMessage!,
+                      _errorMessage ?? '',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),

@@ -27,11 +27,16 @@ class DatabaseHelper {
 
   /// 데이터베이스 인스턴스 반환
   Future<Database> get database async {
-    if (_database != null && _database!.isOpen) {
-      return _database!;
+    final db = _database;
+    if (db != null && db.isOpen) {
+      return db;
     }
     _database = await _initializeDatabase();
-    return _database!;
+    final newDb = _database;
+    if (newDb != null) {
+      return newDb;
+    }
+    throw Exception('데이터베이스 초기화 실패');
   }
 
   /// 데이터베이스 초기화
@@ -275,9 +280,10 @@ class DatabaseHelper {
   /// 데이터베이스 백업
   Future<bool> backupDatabase(String backupPath) async {
     try {
-      if (_database == null) return false;
+      final db = _database;
+      if (db == null) return false;
 
-      final dbPath = _database!.path;
+      final dbPath = db.path;
       final dbFile = File(dbPath);
       final backupFile = File(backupPath);
 
@@ -318,8 +324,9 @@ class DatabaseHelper {
 
   /// 데이터베이스 연결 닫기
   Future<void> close() async {
-    if (_database != null) {
-      await _database!.close();
+    final db = _database;
+    if (db != null) {
+      await db.close();
       _database = null;
       _isInitialized = false;
       _logger.d('🔐 데이터베이스 연결 종료');
@@ -339,8 +346,9 @@ class DatabaseHelper {
 
   /// 데이터베이스 경로 반환
   Future<String> get databasePath async {
-    if (_customPath != null) {
-      return _customPath!;
+    final customPath = _customPath;
+    if (customPath != null) {
+      return customPath;
     }
     final documentsPath = await getDatabasesPath();
     return join(documentsPath, DatabaseSchema.databaseName);
