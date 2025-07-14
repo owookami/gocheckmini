@@ -62,13 +62,17 @@ class ParkingSearchService {
               if (!kIsWeb) 'User-Agent': 'ParkingFinderApp/1.0',
             },
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 30)); // 타임아웃 시간 증가
       
       _logger.i('✅ 직접 호출 성공: ${response.statusCode}');
       return response;
       
     } catch (e) {
-      _logger.w('⚠️ 직접 호출 실패: $e');
+      if (e.toString().contains('TimeoutException')) {
+        _logger.e('⏱️ 직접 호출 타임아웃 (30초 초과)');
+      } else {
+        _logger.w('⚠️ 직접 호출 실패: $e');
+      }
       
       // 웹 환경에서만 FastAPI 프록시 서버 사용
       if (kIsWeb) {
@@ -97,7 +101,7 @@ class ParkingSearchService {
                   'Content-Type': 'application/json; charset=utf-8',
                 },
               )
-              .timeout(const Duration(seconds: 45)); // 콜드 스타트 대응
+              .timeout(const Duration(seconds: 60)); // 콜드 스타트 대응 (타임아웃 증가)
           
           if (response.statusCode == 200) {
             _logger.i('✅ FastAPI 프록시 성공');
@@ -117,7 +121,7 @@ class ParkingSearchService {
                     'Content-Type': 'application/json; charset=utf-8',
                   },
                 )
-                .timeout(const Duration(seconds: 10));
+                .timeout(const Duration(seconds: 30)); // 타임아웃 시간 증가
             
             if (fallbackResponse.statusCode == 200) {
               final jsonData = json.decode(fallbackResponse.body);
@@ -134,8 +138,13 @@ class ParkingSearchService {
           }
           
         } catch (proxyError) {
-          _logger.e('❌ 모든 프록시 실패: $proxyError');
-          rethrow;
+          if (proxyError.toString().contains('TimeoutException')) {
+            _logger.e('⏱️ 프록시 요청 타임아웃');
+            throw Exception('네트워크 요청 시간이 초과되었습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
+          } else {
+            _logger.e('❌ 모든 프록시 실패: $proxyError');
+            rethrow;
+          }
         }
       } else {
         // 모바일에서는 직접 호출 실패 시 바로 에러
@@ -353,6 +362,12 @@ class ParkingSearchService {
       return allParkingLots;
     } catch (e) {
       _logger.e('❌ 주차장 검색 실패: $e');
+      
+      // 타임아웃 예외를 더 명확한 메시지로 변환
+      if (e.toString().contains('TimeoutException') || e.toString().contains('시간이 초과')) {
+        throw Exception('검색 요청 시간이 초과되었습니다.\n\n가능한 원인:\n• 네트워크 연결이 불안정합니다\n• 서버가 응답하지 않습니다\n• 요청한 지역의 데이터가 많아 처리 시간이 깁니다\n\n잠시 후 다시 시도해주세요.');
+      }
+      
       rethrow;
     }
   }

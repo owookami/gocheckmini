@@ -33,7 +33,7 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
     _initializeWebView();
   }
 
-  void _initializeWebView() {
+  void _initializeWebView() async {
     final lat = widget.latitude;
     final lng = widget.longitude;
     final name = widget.parkingLot.name ?? '주차장';
@@ -47,49 +47,89 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
       return;
     }
 
-    // iframe을 포함한 HTML 페이지 생성
-    final htmlContent = _generateStreetViewHtml(lat, lng, name);
+    try {
+      _logger.d('🔍 스트리트 뷰 초기화 시작: lat=$lat, lng=$lng');
+      
+      // WebViewController 생성
+      final controller = WebViewController();
+      
+      // JavaScript 모드 설정
+      await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+      
+      // NavigationDelegate 설정
+      await controller.setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            _logger.d('WebView loading progress: $progress%');
+          },
+          onPageStarted: (String url) {
+            _logger.d('Page started loading: $url');
+            if (mounted) {
+              setState(() {
+                _isLoading = true;
+                _errorMessage = null;
+              });
+            }
+          },
+          onPageFinished: (String url) {
+            _logger.d('Page finished loading: $url');
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+            }
+          },
+          onHttpError: (HttpResponseError error) {
+            _logger.e('HTTP error: ${error.response?.statusCode}');
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _errorMessage = 'HTTP 오류: ${error.response?.statusCode}';
+              });
+            }
+          },
+          onWebResourceError: (WebResourceError error) {
+            _logger.e('Web resource error: ${error.description}');
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _errorMessage = '로딩 오류: ${error.description}';
+              });
+            }
+          },
+        ),
+      );
+      
+      // Google Street View embed URL 사용
+      final streetViewUrl = 'https://www.google.com/maps/embed/v1/streetview'
+          '?key=AIzaSyAk5S38hNXK1IGs7wMxGl4vP5genqwCIvY'
+          '&location=$lat,$lng'
+          '&heading=210'
+          '&pitch=10'
+          '&fov=90';
+      
+      _logger.d('🌐 Street View URL: $streetViewUrl');
+      
+      // URL 로드
+      await controller.loadRequest(Uri.parse(streetViewUrl));
 
-    _controller =
-        WebViewController()
-          ..setJavaScriptMode(JavaScriptMode.unrestricted)
-          ..setNavigationDelegate(
-            NavigationDelegate(
-              onProgress: (int progress) {
-                _logger.d('WebView loading progress: $progress%');
-              },
-              onPageStarted: (String url) {
-                _logger.d('Page started loading: $url');
-                setState(() {
-                  _isLoading = true;
-                  _errorMessage = null;
-                });
-              },
-              onPageFinished: (String url) {
-                _logger.d('Page finished loading: $url');
-                setState(() {
-                  _isLoading = false;
-                });
-              },
-              onHttpError: (HttpResponseError error) {
-                _logger.e('HTTP error: ${error.response?.statusCode}');
-                setState(() {
-                  _isLoading = false;
-                  _errorMessage = 'HTTP 오류: ${error.response?.statusCode}';
-                });
-              },
-              onWebResourceError: (WebResourceError error) {
-                _logger.e('Web resource error: ${error.description}');
-                setState(() {
-                  _isLoading = false;
-                  _errorMessage = '로딩 오류: ${error.description}';
-                });
-              },
-            ),
-          )
-          ..loadHtmlString(htmlContent);
+      // setState를 호출하여 UI 업데이트
+      if (mounted) {
+        setState(() {
+          _controller = controller;
+        });
+      }
 
-    _logger.i('✅ 스트리트 뷰 HTML 초기화 완료: $lat, $lng');
+      _logger.i('✅ 스트리트 뷰 초기화 완료: $lat, $lng');
+    } catch (e) {
+      _logger.e('❌ WebView 초기화 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = '스트리트 뷰를 불러올 수 없습니다.\n브라우저에서 열기를 시도해보세요.';
+        });
+      }
+    }
   }
 
   /// 구글 스트리트 뷰 iframe을 포함한 HTML 생성
@@ -202,6 +242,13 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.open_in_browser),
+            onPressed: _openInExternalBrowser,
+            tooltip: '브라우저에서 열기',
+          ),
+        ],
       ),
       body: _buildBody(),
     );
@@ -211,16 +258,19 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
     return Stack(
       children: [
         // WebView
-        () {
-          final controller = _controller;
-          if (controller != null) {
-            return WebViewWidget(controller: controller);
-          } else {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF4285F4)),
-            );
-          }
-        }(),
+        if (_controller != null)
+          WebViewWidget(controller: _controller!)
+        else if (_errorMessage == null)
+          const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: Color(0xFF4285F4)),
+                SizedBox(height: 16),
+                Text('WebView 초기화 중...'),
+              ],
+            ),
+          )
 
         // 로딩 인디케이터
         if (_isLoading)
@@ -264,19 +314,34 @@ class _GoogleStreetViewScreenState extends State<GoogleStreetViewScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _errorMessage = null;
-                        });
-                        _initializeWebView();
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('다시 시도'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4285F4),
-                        foregroundColor: Colors.white,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _errorMessage = null;
+                            });
+                            _initializeWebView();
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('다시 시도'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4285F4),
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton.icon(
+                          onPressed: _openInExternalBrowser,
+                          icon: const Icon(Icons.open_in_browser),
+                          label: const Text('브라우저에서 열기'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey[600],
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

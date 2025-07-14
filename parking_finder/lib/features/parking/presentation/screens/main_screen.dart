@@ -249,7 +249,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     } catch (e) {
       _logger.e('❌ 검색 실행 실패: $e');
       setState(() {
-        errorMessage = '검색 실행 중 오류가 발생했습니다:\n$e';
+        // 예외 메시지에서 "Exception: " 제거
+        String cleanMessage = e.toString();
+        if (cleanMessage.startsWith('Exception: ')) {
+          cleanMessage = cleanMessage.substring(11);
+        }
+        errorMessage = cleanMessage;
       });
     } finally {
       setState(() {
