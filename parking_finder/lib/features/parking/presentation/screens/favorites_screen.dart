@@ -317,12 +317,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
       // 스트리트 뷰 화면으로 이동
       if (context.mounted && location != null) {
+        final safeLocation = location;
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => GoogleStreetViewScreen(
               parkingLot: parkingLot,
-              latitude: location!.latitude,
-              longitude: location!.longitude,
+              latitude: safeLocation.latitude,
+              longitude: safeLocation.longitude,
             ),
           ),
         );

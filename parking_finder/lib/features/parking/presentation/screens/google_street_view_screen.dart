@@ -13,8 +13,8 @@ class GoogleStreetViewScreen extends StatefulWidget {
   const GoogleStreetViewScreen({
     Key? key,
     required this.parkingLot,
-    required this.latitude,
-    required this.longitude,
+    this.latitude,
+    this.longitude,
   }) : super(key: key);
 
   @override
