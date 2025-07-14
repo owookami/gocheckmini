@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:logger/logger.dart';
 import '../../data/models/parking_lot_model.dart';
 import '../../data/services/favorites_service.dart';
@@ -318,15 +320,30 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       // 스트리트 뷰 화면으로 이동
       if (context.mounted && location != null) {
         final safeLocation = location;
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => GoogleStreetViewScreen(
-              parkingLot: parkingLot,
-              latitude: safeLocation.latitude,
-              longitude: safeLocation.longitude,
+        
+        // 웹에서는 바로 새 탭에서 Google Maps 스트리트 뷰 열기
+        if (kIsWeb) {
+          final lat = safeLocation.latitude;
+          final lng = safeLocation.longitude;
+          final streetViewUrl = 'https://www.google.com/maps/@$lat,$lng,3a,75y,90t/data=!3m4!1e1!3m2!1s$lat,$lng!2e0';
+          
+          launchUrl(
+            Uri.parse(streetViewUrl),
+            webOnlyWindowName: '_blank',
+            mode: LaunchMode.platformDefault,
+          );
+        } else {
+          // 모바일에서는 기존대로 GoogleStreetViewScreen 사용
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => GoogleStreetViewScreen(
+                parkingLot: parkingLot,
+                latitude: safeLocation.latitude,
+                longitude: safeLocation.longitude,
+              ),
             ),
-          ),
-        );
+          );
+        }
       } else {
         // 위치 정보가 없는 경우 에러 메시지 표시
         if (context.mounted) {
