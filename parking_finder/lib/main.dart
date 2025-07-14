@@ -6,6 +6,7 @@ import 'app/theme.dart';
 import 'core/config/app_config.dart';
 import 'core/config/env_config.dart';
 import 'features/splash/splash_screen.dart';
+import 'web/web_main.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +29,12 @@ void main() async {
     EnvConfig.printConfig();
   }
 
-  runApp(const ProviderScope(child: ParkingFinderApp()));
+  // 웹에서는 별도의 간단한 앱 실행
+  if (kIsWeb) {
+    runApp(const ProviderScope(child: WebParkingFinderApp()));
+  } else {
+    runApp(const ProviderScope(child: ParkingFinderApp()));
+  }
 }
 
 class ParkingFinderApp extends StatefulWidget {
