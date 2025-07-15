@@ -58,6 +58,49 @@ class ExcelExportService {
     return exportParkingLotsToExcel(searchResults, fileName);
   }
 
+  /// 전체 데이터를 고정된 파일명으로 내보내기 (앱에서만)
+  static Future<String?> exportAllDataToExcel(
+    List<ParkingLotModel> parkingLots,
+    String dataType
+  ) async {
+    if (kIsWeb) {
+      throw Exception('웹에서는 전체 데이터 다운로드를 지원하지 않습니다');
+    }
+    
+    try {
+      _logger.d('전체 데이터 엑셀 내보내기 시작: ${parkingLots.length}개 항목');
+
+      // 권한 확인
+      bool hasPermission = await _checkStoragePermission();
+      if (!hasPermission) {
+        throw Exception('저장소 권한이 필요합니다');
+      }
+
+      // 엑셀 파일 생성
+      var excel = Excel.createExcel();
+      Sheet sheet = excel['주차장목록'];
+
+      // 헤더 생성
+      _createHeaders(sheet);
+
+      // 데이터 추가
+      _addDataRows(sheet, parkingLots);
+
+      // 파일 저장 (고정된 경로와 파일명)
+      String? filePath = await _saveExcelFileFixed(excel, dataType);
+      
+      if (filePath != null) {
+        _logger.i('전체 데이터 엑셀 파일 저장 완료: $filePath');
+      }
+      
+      return filePath;
+    } catch (e, stackTrace) {
+      _logger.e('전체 데이터 엑셀 내보내기 실패: $e');
+      _logger.e('스택 트레이스: $stackTrace');
+      rethrow;
+    }
+  }
+
   /// 웹 브라우저에서 파일 다운로드
   static Future<String?> _exportToWebBrowser(List<ParkingLotModel> parkingLots, String fileName) async {
     try {
@@ -230,6 +273,49 @@ class ExcelExportService {
         var cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: j, rowIndex: rowIndex));
         cell.value = TextCellValue(rowData[j]);
       }
+    }
+  }
+
+  /// 엑셀 파일 저장 (고정된 파일명)
+  static Future<String?> _saveExcelFileFixed(Excel excel, String dataType) async {
+    try {
+      // parking_finder 폴더 생성
+      Directory? baseDirectory;
+      
+      if (Platform.isAndroid) {
+        baseDirectory = Directory('/storage/emulated/0/parking_finder');
+        if (!await baseDirectory.exists()) {
+          await baseDirectory.create(recursive: true);
+        }
+      } else if (Platform.isIOS) {
+        final documentsDir = await getApplicationDocumentsDirectory();
+        baseDirectory = Directory('${documentsDir.path}/parking_finder');
+        if (!await baseDirectory.exists()) {
+          await baseDirectory.create(recursive: true);
+        }
+      }
+
+      if (baseDirectory == null) {
+        throw Exception('저장 디렉토리를 찾을 수 없습니다');
+      }
+
+      // 고정된 파일명
+      final fileName = dataType == 'general' ? '일반주차장_전체데이터.xlsx' : '부설주차장_전체데이터.xlsx';
+      final filePath = '${baseDirectory.path}/$fileName';
+      
+      // 엑셀 파일 저장
+      final List<int>? fileBytes = excel.save();
+      if (fileBytes == null) {
+        throw Exception('엑셀 파일 생성에 실패했습니다');
+      }
+      
+      final file = File(filePath);
+      await file.writeAsBytes(fileBytes);
+      
+      return filePath;
+    } catch (e) {
+      _logger.e('파일 저장 실패: $e');
+      rethrow;
     }
   }
 

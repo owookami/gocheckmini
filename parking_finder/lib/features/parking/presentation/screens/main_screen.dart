@@ -10,6 +10,7 @@ import '../../data/services/parking_search_service.dart';
 import '../../../../core/utils/web_utils.dart';
 import 'parking_search_result_screen.dart';
 import 'favorites_screen.dart';
+import 'database_management_screen.dart';
 
 /// 주차장 찾기 메인 화면
 /// 계층적 지역 선택 (시도 > 시군구 > 읍면동) 제공
@@ -302,6 +303,17 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.storage),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const DatabaseManagementScreen(),
+                ),
+              );
+            },
+            tooltip: '데이터베이스 관리',
+          ),
           IconButton(
             icon: const Icon(Icons.star),
             onPressed: () {
