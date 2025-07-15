@@ -1,7 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:logger/logger.dart';
-import 'dart:html' as html;
+
+// 조건부 import로 웹에서만 dart:html 사용
+import 'web_street_view_stub.dart'
+    if (dart.library.html) 'dart:html' as html;
 
 /// 웹 전용 스트리트 뷰 서비스
 class WebStreetViewService {

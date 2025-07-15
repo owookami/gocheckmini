@@ -61,6 +61,11 @@ dependencies:
   intl: ^0.19.0
   shared_preferences: ^2.2.2
   
+  # File handling & Excel export
+  excel: ^4.0.6
+  path_provider: ^2.1.2
+  permission_handler: ^11.3.1
+  
   # Maps & Location
   google_maps_flutter: ^2.6.1
   webview_flutter: ^4.4.4
