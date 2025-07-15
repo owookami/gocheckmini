@@ -179,13 +179,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           if (_favorites.isNotEmpty) ...[
-            // 엑셀 다운로드 버튼 (앱에서만)
-            if (!kIsWeb)
-              IconButton(
-                icon: const Icon(Icons.download),
-                onPressed: _exportToExcel,
-                tooltip: '엑셀 다운로드',
-              ),
+            // 엑셀 다운로드 버튼 (앱과 웹 모두)
+            IconButton(
+              icon: const Icon(Icons.download),
+              onPressed: _exportToExcel,
+              tooltip: '엑셀 다운로드',
+            ),
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               onPressed: _confirmClearAll,

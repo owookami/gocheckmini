@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import '../../data/models/parking_lot_model.dart';
 import '../../data/services/parking_search_service.dart';
 import '../../data/services/favorites_service.dart';
+import '../../data/services/excel_export_service.dart';
 import 'naver_map_screen.dart';
 import 'google_map_screen.dart';
 import 'google_street_view_screen.dart';
@@ -85,6 +86,14 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
       appBar: AppBar(
         title: Text('${widget.searchType.displayName} 검색 결과'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          if (widget.parkingLots.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.download),
+              onPressed: _exportToExcel,
+              tooltip: '엑셀 다운로드',
+            ),
+        ],
       ),
       body:
           totalCount == 0
@@ -569,6 +578,79 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
           SnackBar(
             content: Text('스트리트 뷰 열기 실패: $e'),
             backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 엑셀 파일로 내보내기
+  Future<void> _exportToExcel() async {
+    if (widget.parkingLots.isEmpty) return;
+
+    // 로딩 다이얼로그 표시
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('엑셀 파일을 생성하는 중...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final filePath = await ExcelExportService.exportSearchResultsToExcel(
+        widget.parkingLots,
+        _getCleanSearchLocation(),
+        widget.searchType.displayName,
+      );
+      
+      // 로딩 다이얼로그 닫기
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (filePath != null && mounted) {
+        final message = kIsWeb 
+          ? '엑셀 파일이 다운로드되었습니다\n$filePath'
+          : '엑셀 파일이 저장되었습니다\n$filePath';
+          
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: '확인',
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // 로딩 다이얼로그 닫기
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // 에러 메시지 표시
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('엑셀 내보내기 실패: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

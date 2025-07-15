@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -7,20 +8,99 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/parking_lot_model.dart';
 
+// 웹용 conditional import
+import 'excel_web_stub.dart'
+    if (dart.library.html) 'dart:html' as html;
+
 /// 엑셀 내보내기 서비스
 class ExcelExportService {
   static final Logger _logger = Logger();
 
+  /// 주차장 목록을 엑셀 파일로 내보내기 (범용)
+  static Future<String?> exportParkingLotsToExcel(
+    List<ParkingLotModel> parkingLots, 
+    String fileName
+  ) async {
+    try {
+      _logger.d('엑셀 내보내기 시작: ${parkingLots.length}개 항목');
+
+      // 웹 환경에서는 브라우저 다운로드
+      if (kIsWeb) {
+        return await _exportToWebBrowser(parkingLots, fileName);
+      }
+
+      // 모바일에서는 파일 시스템에 저장
+      return await _exportToMobileFile(parkingLots, fileName);
+    } catch (e, stackTrace) {
+      _logger.e('엑셀 내보내기 실패: $e');
+      _logger.e('스택 트레이스: $stackTrace');
+      rethrow;
+    }
+  }
+
   /// 즐겨찾기 목록을 엑셀 파일로 내보내기
   static Future<String?> exportFavoritesToExcel(List<ParkingLotModel> favorites) async {
-    try {
-      _logger.d('엑셀 내보내기 시작: ${favorites.length}개 항목');
+    final now = DateTime.now();
+    final formatter = DateFormat('yyyy-MM-dd_HH-mm-ss');
+    final fileName = '즐겨찾기_${formatter.format(now)}';
+    return exportParkingLotsToExcel(favorites, fileName);
+  }
 
-      // 웹 환경에서는 지원하지 않음
-      if (kIsWeb) {
-        _logger.w('웹 환경에서는 엑셀 다운로드를 지원하지 않습니다');
-        throw Exception('웹 환경에서는 파일 다운로드를 지원하지 않습니다');
+  /// 검색 결과를 엑셀 파일로 내보내기
+  static Future<String?> exportSearchResultsToExcel(
+    List<ParkingLotModel> searchResults,
+    String searchLocation,
+    String searchType
+  ) async {
+    final now = DateTime.now();
+    final formatter = DateFormat('yyyy-MM-dd_HH-mm-ss');
+    final fileName = '주차장검색결과_${searchLocation}_${searchType}_${formatter.format(now)}';
+    return exportParkingLotsToExcel(searchResults, fileName);
+  }
+
+  /// 웹 브라우저에서 파일 다운로드
+  static Future<String?> _exportToWebBrowser(List<ParkingLotModel> parkingLots, String fileName) async {
+    try {
+      // 엑셀 파일 생성
+      var excel = Excel.createExcel();
+      Sheet sheet = excel['주차장목록'];
+
+      // 헤더 생성
+      _createHeaders(sheet);
+
+      // 데이터 추가
+      _addDataRows(sheet, parkingLots);
+
+      // 엑셀 파일을 바이트로 변환
+      final List<int>? fileBytes = excel.save();
+      if (fileBytes == null) {
+        throw Exception('엑셀 파일 생성에 실패했습니다');
       }
+
+      // 웹에서 파일 다운로드
+      final blob = html.Blob([Uint8List.fromList(fileBytes)], 
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.document.createElement('a') as html.AnchorElement;
+      anchor.href = url;
+      anchor.download = '$fileName.xlsx';
+      html.document.body?.append(anchor);
+      anchor.click();
+      anchor.remove();
+      html.Url.revokeObjectUrl(url);
+
+      _logger.i('웹에서 엑셀 파일 다운로드 완료: $fileName.xlsx');
+      return '$fileName.xlsx';
+    } catch (e) {
+      _logger.e('웹 다운로드 실패: $e');
+      rethrow;
+    }
+  }
+
+  /// 모바일에서 파일 시스템에 저장
+  static Future<String?> _exportToMobileFile(List<ParkingLotModel> parkingLots, String fileName) async {
+    try {
 
       // 권한 확인
       bool hasPermission = await _checkStoragePermission();
@@ -30,16 +110,16 @@ class ExcelExportService {
 
       // 엑셀 파일 생성
       var excel = Excel.createExcel();
-      Sheet sheet = excel['즐겨찾기'];
+      Sheet sheet = excel['주차장목록'];
 
       // 헤더 생성
       _createHeaders(sheet);
 
       // 데이터 추가
-      _addDataRows(sheet, favorites);
+      _addDataRows(sheet, parkingLots);
 
       // 파일 저장
-      String? filePath = await _saveExcelFile(excel);
+      String? filePath = await _saveExcelFile(excel, fileName);
       
       if (filePath != null) {
         _logger.i('엑셀 파일 저장 완료: $filePath');
@@ -126,9 +206,9 @@ class ExcelExportService {
   }
 
   /// 데이터 행 추가
-  static void _addDataRows(Sheet sheet, List<ParkingLotModel> favorites) {
-    for (int i = 0; i < favorites.length; i++) {
-      final parking = favorites[i];
+  static void _addDataRows(Sheet sheet, List<ParkingLotModel> parkingLots) {
+    for (int i = 0; i < parkingLots.length; i++) {
+      final parking = parkingLots[i];
       final rowIndex = i + 1; // 헤더 다음 행부터 시작
 
       final rowData = [
@@ -154,7 +234,7 @@ class ExcelExportService {
   }
 
   /// 엑셀 파일 저장
-  static Future<String?> _saveExcelFile(Excel excel) async {
+  static Future<String?> _saveExcelFile(Excel excel, String fileName) async {
     try {
       // 저장 디렉토리 가져오기
       Directory? directory;
@@ -174,13 +254,8 @@ class ExcelExportService {
         throw Exception('저장 디렉토리를 찾을 수 없습니다');
       }
 
-      // 파일명 생성 (현재 날짜시간 포함)
-      final now = DateTime.now();
-      final formatter = DateFormat('yyyy-MM-dd_HH-mm-ss');
-      final fileName = '즐겨찾기_${formatter.format(now)}.xlsx';
-      
       // 파일 경로
-      final filePath = '${directory.path}/$fileName';
+      final filePath = '${directory.path}/$fileName.xlsx';
       
       // 엑셀 파일 저장
       final List<int>? fileBytes = excel.save();
