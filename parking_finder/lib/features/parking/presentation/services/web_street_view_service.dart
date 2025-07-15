@@ -19,9 +19,9 @@ class WebStreetViewService {
     }
 
     try {
-      // Google Maps 검색 URL 생성
+      // Google Maps 스트리트 뷰 URL 생성 (한글 지원)
       final encodedAddress = Uri.encodeComponent(address);
-      final streetViewUrl = 'https://www.google.com/maps/search/$encodedAddress';
+      final streetViewUrl = 'https://www.google.com/maps/search/$encodedAddress?hl=ko&t=k&layer=c';
       
       print('🌐 생성된 URL: $streetViewUrl');
       _logger.d('스트리트 뷰 URL: $streetViewUrl');
@@ -85,8 +85,8 @@ class WebStreetViewService {
     }
 
     try {
-      // Google Maps 스트리트 뷰 URL 생성
-      final streetViewUrl = 'https://www.google.com/maps/@$latitude,$longitude,3a,75y,90t/data=!3m6!1e1!3m4!1s0x0:0x0!2e0!7i13312!8i6656';
+      // Google Maps 스트리트 뷰 URL 생성 (한글 지원)
+      final streetViewUrl = 'https://www.google.com/maps/@$latitude,$longitude,3a,75y,90t/data=!3m6!1e1!3m4!1s0x0:0x0!2e0!7i13312!8i6656!5m1!1e2&hl=ko';
       
       print('🌐 생성된 URL: $streetViewUrl');
       _logger.d('스트리트 뷰 URL: $streetViewUrl');
@@ -201,10 +201,10 @@ class WebStreetViewService {
       String mapsUrl;
       
       if (latitude != null && longitude != null) {
-        mapsUrl = 'https://www.google.com/maps/place/$latitude,$longitude';
+        mapsUrl = 'https://www.google.com/maps/place/$latitude,$longitude?hl=ko';
       } else {
         final encodedAddress = Uri.encodeComponent(address);
-        mapsUrl = 'https://www.google.com/maps/search/$encodedAddress';
+        mapsUrl = 'https://www.google.com/maps/search/$encodedAddress?hl=ko';
       }
       
       _logger.d('Google Maps URL: $mapsUrl');
