@@ -421,6 +421,9 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
     BuildContext context,
     ParkingLotModel parkingLot,
   ) async {
+    print('🚀🚀🚀 _openStreetViewDirect 함수 시작!');
+    print('📍 주차장 이름: ${parkingLot.name}');
+    print('📍 주차장 주소: ${parkingLot.address}');
     // 로딩 다이얼로그 표시
     showDialog(
       context: context,
@@ -444,27 +447,39 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
     );
 
     try {
+      print('🔍 try 블록 시작');
       LatLng? location;
 
+      print('📍 좌표 확인 중...');
       // 이미 좌표가 있는 경우
       if (parkingLot.latitude != null && parkingLot.longitude != null) {
+        print('✅ 주차장에 이미 좌표가 있음');
         final lat = parkingLot.latitude;
         final lng = parkingLot.longitude;
+        print('📍 좌표: lat=$lat, lng=$lng');
         if (lat != null && lng != null) {
           location = LatLng(lat, lng);
+          print('✅ LatLng 객체 생성 성공');
         }
       } else {
+        print('🔍 주소로부터 좌표 검색 시작');
         // 주소로부터 좌표 검색
         final address = parkingLot.address;
+        print('📍 검색할 주소: $address');
         if (address == null || address.isEmpty) {
+          print('❌ 주소 정보가 없음');
           throw Exception('주소 정보가 없습니다');
         }
 
+        print('🌐 geocoding 시작...');
         final locations = await locationFromAddress(address);
+        print('📍 geocoding 결과: ${locations.length}개');
         if (locations.isNotEmpty) {
           final loc = locations.first;
           location = LatLng(loc.latitude, loc.longitude);
+          print('✅ geocoding 성공: ${loc.latitude}, ${loc.longitude}');
         } else {
+          print('❌ geocoding 결과 없음');
           throw Exception('주소에서 좌표를 찾을 수 없습니다');
         }
       }
@@ -529,14 +544,20 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
           }
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌❌❌ catch 블록 진입!');
+      print('❌ 에러: $e');
+      print('❌ 스택트레이스: $stackTrace');
+      
       // 로딩 다이얼로그 닫기
       if (context.mounted) {
+        print('🔄 로딩 다이얼로그 닫기');
         Navigator.of(context).pop();
       }
 
       // 에러 표시
       if (context.mounted) {
+        print('🚨 에러 스낵바 표시');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('스트리트 뷰 열기 실패: $e'),
