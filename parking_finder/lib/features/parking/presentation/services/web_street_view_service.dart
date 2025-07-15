@@ -19,9 +19,9 @@ class WebStreetViewService {
     }
 
     try {
-      // Google Maps 스트리트 뷰 URL 생성 (한글 지원)
+      // Google Maps URL을 열어서 사용자가 직접 스트리트 뷰 버튼을 클릭할 수 있도록 함
       final encodedAddress = Uri.encodeComponent(address);
-      final streetViewUrl = 'https://www.google.com/maps/search/$encodedAddress?hl=ko&t=k&layer=c';
+      final streetViewUrl = 'https://www.google.com/maps/search/$encodedAddress?hl=ko';
       
       print('🌐 생성된 URL: $streetViewUrl');
       _logger.d('스트리트 뷰 URL: $streetViewUrl');
@@ -85,29 +85,43 @@ class WebStreetViewService {
     }
 
     try {
-      // Google Maps 스트리트 뷰 URL 생성 (한글 지원)
-      final streetViewUrl = 'https://www.google.com/maps/@$latitude,$longitude,3a,75y,90t/data=!3m6!1e1!3m4!1s0x0:0x0!2e0!7i13312!8i6656!5m1!1e2&hl=ko';
+      // 우선 스트리트 뷰 직접 URL 시도, 실패시 일반 맵스 URL 사용
+      final streetViewUrls = [
+        // 스트리트 뷰 직접 접근
+        'https://www.google.com/maps/@$latitude,$longitude,3a,75y/data=!3m6!1e1!3m4!1s0x0:0x0!2e0!7i16384!8i8192?hl=ko',
+        // 일반 지도에서 스트리트 뷰 사용 가능
+        'https://www.google.com/maps/@$latitude,$longitude,18z?hl=ko',
+        // 장소 기반 URL
+        'https://www.google.com/maps/place/$latitude,$longitude?hl=ko'
+      ];
       
-      print('🌐 생성된 URL: $streetViewUrl');
-      _logger.d('스트리트 뷰 URL: $streetViewUrl');
-      
-      print('🚀 두 가지 방법으로 URL 열기 시도...');
-      
-      // 방법 1: dart:html 직접 사용
-      try {
-        print('🌐 방법 1: dart:html window.open 시도');
-        html.window.open(streetViewUrl, '_blank');
-        print('✅ dart:html window.open 성공');
-        _logger.i('✅ 스트리트 뷰 열기 성공: $latitude, $longitude');
-        return true;
-      } catch (htmlError) {
-        print('❌ dart:html 실패: $htmlError');
+      // 첫 번째 URL부터 차례로 시도
+      for (int i = 0; i < streetViewUrls.length; i++) {
+        final streetViewUrl = streetViewUrls[i];
+        print('🌐 시도 ${i+1}: $streetViewUrl');
+        _logger.d('스트리트 뷰 URL: $streetViewUrl');
+        
+        // dart:html 직접 사용하여 URL 열기
+        try {
+          print('🌐 dart:html window.open 시도');
+          html.window.open(streetViewUrl, '_blank');
+          print('✅ URL 열기 성공: ${i+1}번째 시도');
+          _logger.i('✅ 스트리트 뷰 열기 성공: $latitude, $longitude');
+          return true;
+        } catch (htmlError) {
+          print('❌ dart:html 실패 (${i+1}번째): $htmlError');
+          if (i < streetViewUrls.length - 1) {
+            print('⏩ 다음 URL로 시도...');
+            continue;
+          }
+        }
       }
       
-      // 방법 2: url_launcher 사용
+      // 모든 시도가 실패한 경우 url_launcher로 마지막 시도
       try {
-        print('📱 방법 2: url_launcher 시도');
-        final uri = Uri.parse(streetViewUrl);
+        final fallbackUrl = streetViewUrls.last;
+        print('📱 url_launcher로 마지막 시도: $fallbackUrl');
+        final uri = Uri.parse(fallbackUrl);
         final result = await launchUrl(
           uri,
           webOnlyWindowName: '_blank',
