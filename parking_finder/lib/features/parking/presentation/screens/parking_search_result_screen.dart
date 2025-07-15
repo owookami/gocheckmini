@@ -462,25 +462,32 @@ class _ParkingSearchResultScreenState extends State<ParkingSearchResultScreen> {
           print('✅ LatLng 객체 생성 성공');
         }
       } else {
-        print('🔍 주소로부터 좌표 검색 시작');
-        // 주소로부터 좌표 검색
-        final address = parkingLot.address;
-        print('📍 검색할 주소: $address');
-        if (address == null || address.isEmpty) {
-          print('❌ 주소 정보가 없음');
-          throw Exception('주소 정보가 없습니다');
-        }
-
-        print('🌐 geocoding 시작...');
-        final locations = await locationFromAddress(address);
-        print('📍 geocoding 결과: ${locations.length}개');
-        if (locations.isNotEmpty) {
-          final loc = locations.first;
-          location = LatLng(loc.latitude, loc.longitude);
-          print('✅ geocoding 성공: ${loc.latitude}, ${loc.longitude}');
+        // 웹에서는 geocoding 건너뛰기 (null check operator 오류 방지)
+        if (kIsWeb) {
+          print('🌐 웹 환경 - geocoding 건너뛰기');
+          location = null;
+          print('📍 location을 null로 설정 (주소 기반으로 처리 예정)');
         } else {
-          print('❌ geocoding 결과 없음');
-          throw Exception('주소에서 좌표를 찾을 수 없습니다');
+          print('📱 모바일 환경 - geocoding 시도');
+          // 주소로부터 좌표 검색 (모바일에서만)
+          final address = parkingLot.address;
+          print('📍 검색할 주소: $address');
+          if (address == null || address.isEmpty) {
+            print('❌ 주소 정보가 없음');
+            throw Exception('주소 정보가 없습니다');
+          }
+
+          print('🌐 geocoding 시작...');
+          final locations = await locationFromAddress(address);
+          print('📍 geocoding 결과: ${locations.length}개');
+          if (locations.isNotEmpty) {
+            final loc = locations.first;
+            location = LatLng(loc.latitude, loc.longitude);
+            print('✅ geocoding 성공: ${loc.latitude}, ${loc.longitude}');
+          } else {
+            print('❌ geocoding 결과 없음');
+            throw Exception('주소에서 좌표를 찾을 수 없습니다');
+          }
         }
       }
 

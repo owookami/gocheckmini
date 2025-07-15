@@ -298,18 +298,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           location = LatLng(lat, lng);
         }
       } else {
-        // 주소로부터 좌표 검색
-        final address = parkingLot.address;
-        if (address == null || address.isEmpty) {
-          throw Exception('주소 정보가 없습니다');
-        }
-
-        final locations = await locationFromAddress(address);
-        if (locations.isNotEmpty) {
-          final loc = locations.first;
-          location = LatLng(loc.latitude, loc.longitude);
+        // 웹에서는 geocoding 건너뛰기 (null check operator 오류 방지)
+        if (kIsWeb) {
+          location = null;
         } else {
-          throw Exception('주소에서 좌표를 찾을 수 없습니다');
+          // 주소로부터 좌표 검색 (모바일에서만)
+          final address = parkingLot.address;
+          if (address == null || address.isEmpty) {
+            throw Exception('주소 정보가 없습니다');
+          }
+
+          final locations = await locationFromAddress(address);
+          if (locations.isNotEmpty) {
+            final loc = locations.first;
+            location = LatLng(loc.latitude, loc.longitude);
+          } else {
+            throw Exception('주소에서 좌표를 찾을 수 없습니다');
+          }
         }
       }
 
